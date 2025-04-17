@@ -1,2 +1,80 @@
-<script src="xp-calculator.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flying Blue XP & Miles Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 960px;
+      margin: auto;
+      padding: 1em;
+    }
+    input, select {
+      padding: 0.3em;
+      margin: 0.3em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1em;
+    }
+    th, td {
+      padding: 0.5em;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    canvas {
+      margin-top: 2em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Flying Blue XP & Miles 計算器</h1>
 
+  <form id="flight-form">
+    <label>出發機場: <input type="text" id="origin" maxlength="3" required></label>
+    <label>轉機1: <input type="text" id="stop1" maxlength="3"></label>
+    <label>轉機2: <input type="text" id="stop2" maxlength="3"></label>
+    <label>目的地: <input type="text" id="destination" maxlength="3" required></label><br>
+
+    <label>艙等:
+      <select id="cabin">
+        <option value="economy">Economy</option>
+        <option value="premium">Premium Economy</option>
+        <option value="business">Business</option>
+        <option value="first">First</option>
+      </select>
+    </label>
+
+    <label><input type="checkbox" id="roundtrip"> 來回</label>
+    <label><input type="checkbox" id="doublexp"> 雙倍XP</label>
+    <button type="submit">新增航班</button>
+  </form>
+
+  <h3 id="status-info">尚無累積資料</h3>
+
+  <table id="flights-table">
+    <thead>
+      <tr>
+        <th>航線</th>
+        <th>艙等</th>
+        <th>XP</th>
+        <th>Miles</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <canvas id="xpChart" width="600" height="300"></canvas>
+
+  <h4>匯出 / 匯入紀錄</h4>
+  <button id="export-json">匯出 JSON</button>
+  <input type="file" id="import-json">
+
+  <script src="xp-calculator.js"></script>
+</body>
+</html>
