@@ -31,48 +31,61 @@ function updateChart(data) {
           data: data.map(f => f.xp),
           borderColor: "blue",
           fill: false
-        },
-        {
-          label: "Miles",
-          data: data.map(f => f.miles),
-          borderColor: "green",
-          fill: false
         }
       ]
     }
   });
 }
 
-function calculateXP(segment, cabin, roundtrip, doubleXP) {
-  // Simplified based on Flying Blue region matrix
-  const zone = getZone(segment);
-  const xpMap = {
-    economy: [4, 6, 10, 12, 15],
-    premium: [6, 9, 15, 18, 24],
-    business: [12, 18, 30, 36, 45],
-    first: [15, 24, 40, 50, 60]
-  };
-  let baseXP = xpMap[cabin][zone];
-  if (roundtrip) baseXP *= 2;
-  if (doubleXP) baseXP *= 2;
-  return baseXP;
+function calculateXP(segments, cabin, roundtrip, doubleXP) {
+  let totalXP = 0;
+
+  segments.forEach(segment => {
+    const zone = getZone(segment.origin, segment.destination);
+    const xpMap = {
+      economy:  [2, 5, 8, 10, 12],
+      premium:  [4, 10, 16, 20, 24],
+      business: [6, 15, 24, 30, 36],
+      first:    [10, 25, 40, 50, 60]
+    };
+
+    let baseXP = xpMap[cabin][zone];
+    if (roundtrip) baseXP *= 2;
+    if (doubleXP) baseXP *= 2;
+
+    totalXP += baseXP;
+  });
+
+  return totalXP;
 }
 
-function calculateMiles(segment) {
-  return Math.round(Math.random() * 8000) + 1000; // Placeholder
+function getZone(originCode, destinationCode) {
+  const origin = airports.find(a => a.iata === originCode || a.icao === originCode);
+  const destination = airports.find(a => a.iata === destinationCode || a.icao === destinationCode);
+
+  if (!origin || !destination) return 4; // fallback to Long 3
+
+  if (origin.country === destination.country) return 0; // Domestic
+
+  // 判斷區域，不再計算 miles
+  const distance = getDistance(origin.lat, origin.lon, destination.lat, destination.lon);
+  if (distance < 2000) return 1;         // Medium
+  if (distance < 3500) return 2;         // Long 1
+  if (distance < 5000) return 3;         // Long 2
+  return 4;                              // Long 3
 }
 
-function getZone(segment) {
-  const domestic = ["AMS", "CDG", "FRA"];
-  const medium = ["LHR", "BCN", "MAD"];
-  const long1 = ["JFK", "CAI", "DXB"];
-  const long2 = ["BKK", "SIN", "DEL"];
-  const long3 = ["SYD", "LAX", "CPT"];
-  if (domestic.includes(segment)) return 0;
-  if (medium.includes(segment)) return 1;
-  if (long1.includes(segment)) return 2;
-  if (long2.includes(segment)) return 3;
-  return 4;
+function getDistance(lat1, lon1, lat2, lon2) {
+  const toRad = x => (x * Math.PI) / 180;
+  const R = 6371; // Earth radius in km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 function addFlightToTable(flight, id) {
@@ -81,7 +94,6 @@ function addFlightToTable(flight, id) {
     <td>${flight.origin} → ${flight.stop1 || "-"} → ${flight.stop2 || "-"} → ${flight.destination}</td>
     <td>${flight.cabin}</td>
     <td>${flight.xp}</td>
-    <td>${flight.miles}</td>
     <td><button onclick="deleteFlight(${id})">Delete</button></td>
   `;
   document.querySelector("#flights-table tbody").appendChild(tr);
@@ -101,11 +113,9 @@ function loadFlights() {
     const tbody = document.querySelector("#flights-table tbody");
     tbody.innerHTML = "";
     let totalXP = 0;
-    let totalMiles = 0;
     request.result.forEach(f => {
       addFlightToTable(f, f.id);
       totalXP += f.xp;
-      totalMiles += f.miles;
     });
     updateChart(request.result);
     updateStatus(totalXP);
@@ -119,7 +129,6 @@ function updateStatus(totalXP) {
   document.getElementById("status-info").textContent = `距離 Silver: ${Math.max(0, neededSilver)} XP | Gold: ${Math.max(0, neededGold)} XP | Platinum: ${Math.max(0, neededPlat)} XP`;
 }
 
-// Add flight event
 const form = document.getElementById("flight-form");
 form.addEventListener("submit", function (e) {
   e.preventDefault();
@@ -130,16 +139,18 @@ form.addEventListener("submit", function (e) {
   const cabin = document.getElementById("cabin").value;
   const roundtrip = document.getElementById("roundtrip").checked;
   const doubleXP = document.getElementById("doublexp").checked;
-  const segments = [origin];
-  if (stop1) segments.push(stop1);
-  if (stop2) segments.push(stop2);
-  segments.push(destination);
 
-  const totalXP = segments.length * calculateXP(destination, cabin, roundtrip, doubleXP);
-  const totalMiles = segments.length * calculateMiles(destination);
+  const segments = [];
+  if (origin && stop1) segments.push({ origin, destination: stop1 });
+  if (stop1 && stop2) segments.push({ origin: stop1, destination: stop2 });
+  if (stop2) segments.push({ origin: stop2, destination });
+  else if (stop1) segments.push({ origin: stop1, destination });
+  else segments.push({ origin, destination });
+
+  const totalXP = calculateXP(segments, cabin, roundtrip, doubleXP);
 
   const tx = db.transaction("flights", "readwrite");
-  tx.objectStore("flights").add({ origin, stop1, stop2, destination, cabin, roundtrip, doubleXP, xp: totalXP, miles: totalMiles });
+  tx.objectStore("flights").add({ origin, stop1, stop2, destination, cabin, roundtrip, doubleXP, xp: totalXP });
   tx.oncomplete = () => loadFlights();
 });
 
@@ -172,3 +183,40 @@ document.getElementById("import-json").addEventListener("change", (e) => {
   };
   reader.readAsText(file);
 });
+
+// Airport Autocomplete Setup
+function setupAirportAutocomplete(inputId, suggestionId) {
+  const input = document.getElementById(inputId);
+  const suggestionBox = document.getElementById(suggestionId);
+
+  input.addEventListener("input", function () {
+    const query = input.value.trim().toUpperCase();
+    suggestionBox.innerHTML = "";
+    if (query.length < 2) return;
+
+    const matches = airports.filter(a =>
+      a.code.startsWith(query) ||
+      a.city.toUpperCase().includes(query) ||
+      a.name.toUpperCase().includes(query)
+    ).slice(0, 5);
+
+    matches.forEach(airport => {
+      const li = document.createElement("li");
+      li.textContent = `${airport.code} - ${airport.city}, ${airport.country}`;
+      li.addEventListener("click", () => {
+        input.value = airport.code;
+        suggestionBox.innerHTML = "";
+      });
+      suggestionBox.appendChild(li);
+    });
+  });
+
+  input.addEventListener("blur", () => {
+    setTimeout(() => suggestionBox.innerHTML = "", 200);
+  });
+}
+
+setupAirportAutocomplete("origin", "origin-suggestions");
+setupAirportAutocomplete("stop1", "stop1-suggestions");
+setupAirportAutocomplete("stop2", "stop2-suggestions");
+setupAirportAutocomplete("destination", "destination-suggestions");
