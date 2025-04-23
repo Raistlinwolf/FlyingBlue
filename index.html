@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flying Blue XP Calculator</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flying Blue XP 計算器</title>
   <style>
     body {
       font-family: sans-serif;
@@ -26,24 +25,20 @@
       border: 1px solid #ccc;
       text-align: center;
     }
-    canvas {
-      margin-top: 2em;
-    }
-    .autocomplete-dropdown {
-      position: absolute;
+    .autocomplete-suggestions {
       border: 1px solid #ccc;
-      background: white;
       max-height: 200px;
       overflow-y: auto;
-      z-index: 1000;
-      width: 100%;
+      position: absolute;
+      background: white;
+      z-index: 10;
     }
-    .autocomplete-dropdown div {
-      padding: 8px 12px;
+    .autocomplete-suggestion {
+      padding: 0.4em;
       cursor: pointer;
     }
-    .autocomplete-dropdown div:hover {
-      background-color: #f0f0f0;
+    .autocomplete-suggestion:hover {
+      background: #eee;
     }
   </style>
 </head>
@@ -52,22 +47,22 @@
 
   <form id="flight-form">
     <label>出發機場:
-      <input type="text" id="origin" autocomplete="off" required>
+      <input type="text" id="origin" required>
     </label>
     <label>轉機1:
-      <input type="text" id="stop1" autocomplete="off">
+      <input type="text" id="stop1">
     </label>
     <label>轉機2:
-      <input type="text" id="stop2" autocomplete="off">
+      <input type="text" id="stop2">
     </label>
     <label>目的地:
-      <input type="text" id="destination" autocomplete="off" required>
+      <input type="text" id="destination" required>
     </label><br>
 
     <label>艙等:
       <select id="cabin">
         <option value="economy">Economy</option>
-        <option value="premium">Premium Economy</option>
+        <option value="premium">Premium</option>
         <option value="business">Business</option>
         <option value="first">First</option>
       </select>
@@ -77,8 +72,6 @@
     <label><input type="checkbox" id="doublexp"> 雙倍XP</label>
     <button type="submit">新增航班</button>
   </form>
-
-  <ul id="suggestions" class="autocomplete-suggestions"></ul>
 
   <h3 id="status-info">尚無累積資料</h3>
 
@@ -94,78 +87,65 @@
     <tbody></tbody>
   </table>
 
-  <canvas id="xpChart" width="600" height="300"></canvas>
+  <script type="module">
+    import { airports } from './airports.js';
+    import { calculateFlightXP } from './xp-calculator.js';
+    import { setupAutocomplete } from './autocomplete.js';
 
-  <script src="airports.js"></script>
-  <script src="airportCache.js"></script>
-  <script type="module" src="autocomplete.js"></script>
-  <script src="xp-calculator.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const form = document.getElementById('flight-form');
+    const form = document.getElementById('flight-form');
+    const tableBody = document.querySelector('#flights-table tbody');
+    const statusInfo = document.getElementById('status-info');
+    let flights = [];
 
-      // 初始化 autocomplete 功能
-      const airportInputs = ['origin', 'stop1', 'stop2', 'destination'];
-      airportInputs.forEach(id => {
-        const inputEl = document.getElementById(id);
-        setupAirportAutocomplete(inputEl, (selectedAirport) => {
-          console.log(`Selected airport: ${selectedAirport.name} (${selectedAirport.iata})`);
-        });
+    const fields = ['origin', 'stop1', 'stop2', 'destination'];
+    fields.forEach(id => setupAutocomplete(document.getElementById(id), airports));
+
+    function renderTable() {
+      tableBody.innerHTML = '';
+      let totalXP = 0;
+      flights.forEach((f, i) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${f.route}</td>
+          <td>${f.cabin}</td>
+          <td>${f.xp}</td>
+          <td><button data-index="${i}">刪除</button></td>
+        `;
+        tableBody.appendChild(row);
+        totalXP += f.xp;
       });
+      statusInfo.textContent = `目前累積 XP：${totalXP}`;
+    }
 
-      // Handle form submission
-      form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const origin = await getAirportData(document.getElementById('origin').value);
-        const stop1 = document.getElementById('stop1').value ? await getAirportData(document.getElementById('stop1').value) : null;
-        const stop2 = document.getElementById('stop2').value ? await getAirportData(document.getElementById('stop2').value) : null;
-        const destination = await getAirportData(document.getElementById('destination').value);
-        const cabin = document.getElementById('cabin').value;
-        const roundtrip = document.getElementById('roundtrip').checked;
-        const doublexp = document.getElementById('doublexp').checked;
+    tableBody.addEventListener('click', e => {
+      if (e.target.tagName === 'BUTTON') {
+        const index = e.target.dataset.index;
+        flights.splice(index, 1);
+        renderTable();
+      }
+    });
+ㄋ
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const cabin = document.getElementById('cabin').value;
+      const roundtrip = document.getElementById('roundtrip').checked;
+      const doublexp = document.getElementById('doublexp').checked;
+      const codes = ['origin', 'stop1', 'stop2', 'destination'].map(id => document.getElementById(id).value.trim().toUpperCase()).filter(Boolean);
 
-        if (origin && destination) {
-          const xp = await calculateXP({ origin, stop1, stop2, destination, cabin, roundtrip, doublexp });
-          addFlightToTable({ origin, stop1, stop2, destination, cabin, xp });
-        } else {
-          alert('請確認所有機場代碼是否正確！');
+      for (let i = 0; i < codes.length - 1; i++) {
+        const result = calculateFlightXP(codes[i], codes[i + 1], cabin, roundtrip, doublexp);
+        if (result) {
+          flights.push({
+            route: result.route,
+            cabin,
+            xp: result.xp
+          });
         }
-      });
+      }
+      renderTable();
     });
 
-    async function getAirportData(code) {
-      // Fetch airport data from cache or Leaflet
-      const cached = await getFromCache(code);
-      if (cached) return cached;
-      const fetched = await fetchGeoFromLeaflet(code);
-      if (fetched) {
-        await saveToCache(code, fetched);
-        return fetched;
-      }
-      return null;
-    }
-
-    async function calculateXP(data) {
-      // Send data to xp-calculator.js and return XP value
-      return await calculateXPFromData(data);
-    }
-
-    function addFlightToTable({ origin, stop1, stop2, destination, cabin, xp }) {
-      const table = document.querySelector('#flights-table tbody');
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${origin} ${stop1 ? '→ ' + stop1 : ''} ${stop2 ? '→ ' + stop2 : ''} → ${destination}</td>
-        <td>${cabin}</td>
-        <td>${xp}</td>
-        <td><button class="delete-flight">刪除</button></td>
-      `;
-      table.appendChild(row);
-
-      // Add delete functionality
-      row.querySelector('.delete-flight').addEventListener('click', () => {
-        row.remove();
-      });
-    }
+    renderTable();
   </script>
 </body>
 </html>
