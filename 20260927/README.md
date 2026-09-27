@@ -12,6 +12,8 @@ Supabase (Postgres, Auth, Row Level Security) · Vitest · GitHub Pages + GitHub
 
 - Design and data model: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Table-by-table schema reference: [docs/DATABASE.md](docs/DATABASE.md)
+- Hand-over notes for developers / coding agents: [docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)
+- Project summary (portfolio / CV): [docs/CV_SIDE_PROJECT.md](docs/CV_SIDE_PROJECT.md)
 
 ## How it fits together
 
