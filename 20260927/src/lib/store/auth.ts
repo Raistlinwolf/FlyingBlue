@@ -1,6 +1,7 @@
 'use client';
 import { z } from 'zod';
 import { type ActionResult, fail, ok } from '@/lib/action-result';
+import { endDemo, startDemo } from '@/lib/demo';
 import { getSupabase } from '@/lib/supabase/client';
 
 const credentials = z.object({
@@ -18,6 +19,7 @@ export async function signIn(input: { email: string; password: string }): Promis
   if (!parsed.success) return fail(parsed.error.issues[0].message);
   const { error } = await getSupabase().auth.signInWithPassword(parsed.data);
   if (error) return fail(error.message === 'Invalid login credentials' ? 'Wrong email or password.' : error.message);
+  endDemo();
   return ok(null);
 }
 
@@ -37,7 +39,14 @@ export async function signUp(input: { email: string; password: string }): Promis
 }
 
 export async function signOut(): Promise<void> {
+  endDemo();
   await getSupabase().auth.signOut();
+}
+
+/** Browses the demo account without signing in; any session is closed first. */
+export async function enterDemo(): Promise<void> {
+  await getSupabase().auth.signOut();
+  startDemo();
 }
 
 /** Changes the signed-in user's password after re-checking the current one. */

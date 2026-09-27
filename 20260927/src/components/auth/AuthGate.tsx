@@ -1,13 +1,14 @@
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { isDemo } from '@/lib/demo';
 import { getConfig, getSupabase } from '@/lib/supabase/client';
 import { LoadingSkeleton } from '@/components/data/TrackerProvider';
 
 /**
  * Client-side guard for the signed-in app: without a database connection it opens
- * the Connect screen, without a session the login screen. (Security comes from RLS;
- * this only decides what to show.)
+ * the Connect screen, without a session (and outside the read-only demo) the login
+ * screen. (Security comes from RLS; this only decides what to show.)
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -25,11 +26,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       router.replace(`/login?next=${encodeURIComponent(next)}`);
     };
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
+      if (data.session || isDemo()) setReady(true);
       else toLogin();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) toLogin();
+      if ((event === 'SIGNED_OUT' || !session) && !isDemo()) toLogin();
     });
     return () => sub.subscription.unsubscribe();
     // Only on mount: navigation inside the app keeps the session.

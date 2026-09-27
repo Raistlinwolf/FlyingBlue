@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { asset } from '@/lib/base-path';
+import { useDemo } from '@/lib/demo';
 import { signOut } from '@/lib/store/auth';
+import { Notice } from '@/components/ui/primitives';
 import { getSupabase } from '@/lib/supabase/client';
 import {
   CalculatorIcon,
@@ -44,6 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
+  const demo = useDemo();
 
   useEffect(() => {
     getSupabase()
@@ -91,7 +94,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="mt-auto border-t border-line px-2 pt-3 text-xs text-muted">
           <p className="truncate" title={email ?? undefined}>
-            {email}
+            {demo ? 'Demo (read-only)' : email}
           </p>
           <button
             type="button"
@@ -101,13 +104,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               router.replace('/login');
             }}
           >
-            Sign out
+            {demo ? 'Exit demo' : 'Sign out'}
           </button>
         </div>
       </aside>
 
       <main className="min-w-0 flex-1 px-4 pb-28 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 md:pb-10 md:pt-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
+        <div className="mx-auto max-w-6xl">
+          {demo ? (
+            <div className="mb-4">
+              <Notice tone="info">
+                Read-only demo with sample data: look around freely, changes are not saved.{' '}
+                <button
+                  type="button"
+                  className="font-medium underline underline-offset-2"
+                  onClick={async () => {
+                    await signOut();
+                    router.replace('/login');
+                  }}
+                >
+                  Sign in
+                </button>
+              </Notice>
+            </div>
+          ) : null}
+          {children}
+        </div>
       </main>
 
       {/* Desktop floating quick-add */}

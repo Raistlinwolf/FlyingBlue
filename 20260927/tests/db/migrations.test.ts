@@ -114,11 +114,35 @@ describe('row level security', () => {
     });
   });
 
-  it('denies anonymous access', async () => {
+  it('shows anonymous visitors nothing while no demo account is set', async () => {
     await asUser(null, async () => {
-      await expect(db.query('select * from public.bookings')).rejects.toThrow(/permission denied/);
-      await expect(db.query('select * from public.airports')).rejects.toThrow(/permission denied/);
+      expect((await db.query('select * from public.bookings')).rows).toHaveLength(0);
+      expect((await db.query('select * from public.user_settings')).rows).toHaveLength(0);
+      await expect(db.query(`insert into public.bookings (booking_name) values ('spoof')`)).rejects.toThrow(/permission denied/);
     });
+  });
+
+  it('lets anonymous visitors read the demo account only, never write', async () => {
+    await db.query('update private.app_config set demo_user_id = $1', [userA]);
+    try {
+      await asUser(null, async () => {
+        const bookings = await db.query<{ user_id: string }>('select user_id from public.bookings');
+        expect(bookings.rows.length).toBeGreaterThan(0);
+        expect(bookings.rows.every((r) => r.user_id === userA)).toBe(true);
+        expect((await db.query('select * from public.flight_segments')).rows).toHaveLength(1);
+        expect((await db.query('select * from public.airports where iata = $1', ['AMS'])).rows).toHaveLength(1);
+        await expect(db.query(`insert into public.bookings (user_id, booking_name) values ($1, 'x')`, [userA])).rejects.toThrow(/permission denied/);
+        await expect(db.query(`update public.bookings set total_price = 0 where id = $1`, [bookingA])).rejects.toThrow(/permission denied/);
+        await expect(db.query(`delete from public.bookings where id = $1`, [bookingA])).rejects.toThrow(/permission denied/);
+        await expect(db.query('select * from private.app_config')).rejects.toThrow(/permission denied/);
+      });
+      // Signed-in users still see only their own rows, not the demo's.
+      await asUser(userB, async () => {
+        expect((await db.query('select * from public.bookings')).rows).toHaveLength(0);
+      });
+    } finally {
+      await db.query('update private.app_config set demo_user_id = null');
+    }
   });
 
   it('lets users reinstall the default XP chart for themselves only', async () => {

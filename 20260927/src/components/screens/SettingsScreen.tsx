@@ -84,7 +84,7 @@ export function SettingsScreen() {
           <CardTitle>Account & database</CardTitle>
           <div className="flex flex-col gap-3 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-ink-2">{email}</span>
+              <span className="text-ink-2">{email ?? 'Read-only demo'}</span>
               <button
                 type="button"
                 className="rounded-xl border border-line px-4 py-2 font-medium hover:bg-surface-2"
@@ -93,7 +93,7 @@ export function SettingsScreen() {
                   router.replace('/login');
                 }}
               >
-                Sign out
+                {email ? 'Sign out' : 'Exit demo'}
               </button>
             </div>
             {email ? (

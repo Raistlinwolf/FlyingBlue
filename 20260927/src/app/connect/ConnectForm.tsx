@@ -1,7 +1,15 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { type SupabaseConfig, clearConfig, connectionFromLink, saveConfig, testConnection, useConfig } from '@/lib/supabase/client';
+import {
+  type SupabaseConfig,
+  clearConfig,
+  connectionFromLink,
+  envConfig,
+  saveConfig,
+  testConnection,
+  useConfig,
+} from '@/lib/supabase/client';
 import { Button, Card, Field, Notice } from '@/components/ui/primitives';
 
 const LOCAL_URL = 'http://127.0.0.1:54321';
@@ -52,7 +60,16 @@ function ConnectFields({ initial }: { initial: SupabaseConfig | null }) {
   return (
     <Card>
       <form onSubmit={submit} className="flex flex-col gap-4">
-        {fromLink ? <Notice tone="info">Filled in from a connection link — press Connect.</Notice> : null}
+        {fromLink && fromLink.url !== envConfig()?.url ? (
+          // A link can point this site at anyone's database; signing in there would send them your password.
+          <Notice>
+            This link connects to <span className="break-all font-mono">{fromLink.url}</span>, not this site&apos;s own
+            database. Only continue if you set it up or trust whoever sent the link: your email and password go to that
+            database when you sign in.
+          </Notice>
+        ) : fromLink ? (
+          <Notice tone="info">Filled in from a connection link — press Connect.</Notice>
+        ) : null}
         <Field label="Supabase API URL" hint="Local Supabase: http://127.0.0.1:54321">
           <input className="input font-mono text-sm" value={url} onChange={(e) => setUrl(e.target.value)} autoComplete="off" spellCheck={false} />
         </Field>

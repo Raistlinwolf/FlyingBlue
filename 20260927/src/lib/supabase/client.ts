@@ -17,7 +17,8 @@ const CHANGE_EVENT = 'fbxp-config-change';
 let client: SupabaseClient | undefined;
 let clientFor: string | undefined;
 
-function envConfig(): SupabaseConfig | null {
+/** The connection built into this site (build-time env vars), if any. */
+export function envConfig(): SupabaseConfig | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   return url && key ? { url, key } : null;

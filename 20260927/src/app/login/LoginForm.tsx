@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { safeNext, signIn, signUp } from '@/lib/store/auth';
+import { enterDemo, safeNext, signIn, signUp } from '@/lib/store/auth';
 import { useConfig } from '@/lib/supabase/client';
 import { Button, Card, Field, Notice } from '@/components/ui/primitives';
 
@@ -85,6 +85,22 @@ export function LoginForm() {
           {mode === 'signin' ? 'Create an account' : 'Sign in'}
         </button>
       </p>
+      <div className="mt-4 border-t border-line pt-4 text-center">
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              await enterDemo();
+              router.replace('/dashboard');
+            })
+          }
+        >
+          Try the demo
+        </Button>
+        <p className="mt-2 text-xs text-muted">No account needed. Sample data, read-only.</p>
+      </div>
       {database ? (
         <p className="mt-3 border-t border-line pt-3 text-center text-xs text-muted">
           Database: <span className="font-mono">{database}</span> ·{' '}

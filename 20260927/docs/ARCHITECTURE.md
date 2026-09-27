@@ -199,10 +199,12 @@ amount is **excluded and reported** in a warning, never assumed to be EUR.
 - RLS on every table. Policies: `select/insert/update/delete` where
   `auth.uid() = user_id`, granted to `authenticated` only.
 - `airports` is readable by authenticated users; nobody can write via the API.
+- Read-only demo: `anon` may only *select* the rows of the account in
+  `private.app_config.demo_user_id` (and `airports`); it has no write privileges.
 - Registration is restricted by a `before insert` trigger on `auth.users` that
   rejects emails not present in `signup_allowlist`.
-- The browser only ever sees the publishable/anon key. No service-role key is
-  used by the app, and no key is compiled into the public build.
+- The browser only ever sees the publishable/anon key (the deploy build embeds it and
+  the project URL, which are public by design). No service-role key is used by the app.
 - Signed-out users are sent to `/login` by a client-side gate; this is only
   navigation — data access is enforced by RLS in the database.
 

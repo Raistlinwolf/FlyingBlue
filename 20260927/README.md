@@ -48,7 +48,13 @@ The secret / service-role key and the database password are never used by the ap
 - **管理員帳號**：可以在 Settings → **Admin · registration**
   - 開啟／關閉註冊（開啟時任何人都能註冊，用完請關閉）
   - 只邀請特定 Email（加入允許名單，對方即可註冊）
-- **測試帳號**：`dev@example.com` / `supersecret1`，沒有資料，可用來試功能。
+- **唯讀展示（Demo）**：登入頁按 **Try the demo**，不需帳號即可瀏覽一個展示帳號的範例資料，
+  資料庫只允許讀取、不能修改。展示帳號的密碼只有擁有者知道（不寫在 repo）。
+  更換或關閉展示帳號（Supabase SQL Editor）：
+  ```sql
+  update private.app_config set demo_user_id = (select id from auth.users where email = '展示帳號 email');
+  update private.app_config set demo_user_id = null;  -- 關閉展示
+  ```
 - **修改密碼**：Settings → Account & database → **Change password**（需先輸入目前密碼）。
 - 新增管理員（在 Supabase 網頁 SQL Editor 執行）：
   ```sql
@@ -171,7 +177,7 @@ npm run dev                 # http://localhost:3000
 ```
 
 `supabase/seed.sql` allow-lists `dev@example.com` for local testing (email
-confirmation is disabled locally).
+confirmation is disabled locally; pick any password when you register it).
 
 ```bash
 npm test           # domain, Excel import, migrations + RLS (no Supabase needed)
@@ -204,8 +210,12 @@ redirect URLs if email confirmation is on.
 - Registration is enforced in the database by a trigger: allowed only while an admin has
   switched it on, or for emails on `private.signup_allowlist`. Admins (`private.admins`)
   manage both through security-definer functions that check admin rights on every call.
-- The public build contains no database URL or key. Only the publishable key is ever
-  used in the browser — never the secret / service-role key.
+- **Read-only demo:** visitors without an account (role `anon`) may *select* the rows of
+  one demo account (`private.app_config.demo_user_id`, null = demo off) and nothing else;
+  `anon` has no insert/update/delete privileges on any table.
+- The build contains the project URL and the **publishable** key (public by design).
+  The secret / service-role key and the database password are never used by the app
+  and must never be committed.
 - `.gitignore` excludes `.env*.local`, spreadsheets (`*.xlsx`) and backup files, so
   personal data does not end up in this public repository.
 

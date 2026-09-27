@@ -10,6 +10,7 @@ Postgres (Supabase). Defined only by the migrations in `supabase/migrations/`:
 | `20260927000400_seed_airports.sql` | airport reference data (generated) |
 | `20260927000500_cycle_carryover.sql` | `carried_over_xp` on qualification cycles |
 | `20260927000600_admin_registration.sql` | admins, registration switch, allowlist management, keep-alive |
+| `20260927000700_demo_read_only.sql` | read-only demo: `anon` may select one demo account's rows |
 
 Conventions: `id uuid` primary keys (`gen_random_uuid()`); `user_id uuid not null
 default auth.uid()` on user-owned tables; `created_at` / `updated_at timestamptz`;
@@ -164,6 +165,9 @@ The `private` schema is not exposed through the Data API.
   `insert into private.admins (user_id) select id from auth.users where email = '…';`
 - `private.app_config.registration_open`: when true, anyone can register; otherwise only
   allow-listed emails.
+- `private.app_config.demo_user_id`: the account visitors can browse read-only without
+  signing in (null = demo off). `public.demo_user_id()` (security definer, callable by
+  `anon`) returns it for the policies below.
 - Functions (security definer, admin-checked): `is_admin()`, `admin_registration_status()`,
   `admin_set_registration_open(open)`, `admin_allow_email(target_email, allow)`.
 - `keepalive()` returns `now()` for the scheduled GitHub Action; callable anonymously,
@@ -181,7 +185,10 @@ create policy <table>_update_own on <table> for update to authenticated using (.
 create policy <table>_delete_own on <table> for delete to authenticated using (...);
 ```
 
-`anon` has no privileges on any table. `tests/db/migrations.test.ts` applies all
+Read-only demo (migration 700): each of these tables also has
+`<table>_select_demo ... for select to anon using (user_id = (select public.demo_user_id()))`,
+and `airports` is readable by `anon`. `anon` holds only `SELECT`, so it can never write;
+while `demo_user_id` is null it sees no rows. `tests/db/migrations.test.ts` applies all
 migrations to an embedded Postgres and verifies isolation between two users,
 the allowlist, composite foreign keys and the cycle-overlap constraint.
 

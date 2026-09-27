@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useTransition } from 'react';
 import type { ActionResult } from '@/lib/action-result';
+import { DEMO_READ_ONLY, isDemo } from '@/lib/demo';
 import { useReload } from '@/components/data/tracker-context';
 import { useToast } from './Toast';
 
@@ -16,6 +17,12 @@ export function useAction() {
   const run = useCallback(
     <T,>(action: () => Promise<ActionResult<T>>, successMessage?: string): Promise<ActionResult<T>> =>
       new Promise((resolve) => {
+        // The database would refuse it anyway (anon is read-only); say why up front.
+        if (isDemo()) {
+          toast(DEMO_READ_ONLY, 'error');
+          resolve({ ok: false, error: DEMO_READ_ONLY });
+          return;
+        }
         startTransition(async () => {
           try {
             const result = await action();

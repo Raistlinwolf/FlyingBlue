@@ -1,5 +1,6 @@
 'use client';
-// Reads. Row Level Security limits every query to the signed-in user's rows.
+// Reads. Row Level Security limits every query to the signed-in user's rows (or, for
+// a visitor in the read-only demo, to the demo account's rows).
 import type {
   Booking,
   Credit,
@@ -12,6 +13,7 @@ import type {
   XpTransaction,
 } from '@/domain/types';
 import { DEFAULT_SETTINGS } from '@/domain/types';
+import { isDemo } from '@/lib/demo';
 import { getSupabase } from '@/lib/supabase/client';
 import { loadIsAdmin } from './admin';
 
@@ -46,8 +48,9 @@ export async function requireSession() {
 }
 
 export async function loadEverything(): Promise<Everything> {
-  const user = await requireSession();
   const supabase = getSupabase();
+  // Demo visitors have no session; RLS then returns the demo account's rows (read-only).
+  const user = isDemo() ? null : await requireSession();
   const [bookings, segments, xpTransactions, credits, exchangeRates, cycles, rules, settingsRes, isAdmin] = await Promise.all([
     fetchAll<Booking>('bookings', 'purchase_date'),
     fetchAll<FlightSegment>('flight_segments', 'flight_date'),
@@ -65,8 +68,8 @@ export async function loadEverything(): Promise<Everything> {
     settings: { ...DEFAULT_SETTINGS, ...(settingsRes.data ?? {}) },
     cycles,
     rules,
-    email: user.email ?? null,
-    userId: user.id,
+    email: user?.email ?? null,
+    userId: user?.id ?? '',
     isAdmin,
   };
 }

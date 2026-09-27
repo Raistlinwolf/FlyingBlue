@@ -80,6 +80,16 @@ Browser ── static Next.js export (GitHub Pages, basePath /FlyingBlue)
    or prefilled (`src/lib/entry-context.ts`; falls back to Settings → Default airline),
    and `AirlineInput` empties the box on focus (current value shown as placeholder) so
    the full list appears; leaving it untouched keeps the value.
+8. **Read-only demo + security review.** Migration 700 lets role `anon` *select* the
+   rows of `private.app_config.demo_user_id` (plus `airports`); anon has no write
+   privileges anywhere. Login has **Try the demo** (`src/lib/demo.ts`, a sessionStorage
+   flag): `loadEverything` skips the session, `useAction` refuses writes with a
+   message, AppShell shows a banner and "Exit demo". The test account's password was
+   removed from the README and changed. The Connect screen now warns when a connection
+   link points at a database other than the built-in one (a link could otherwise send a
+   user's password to someone else's Supabase). Review findings: no secrets in the
+   history; the live API denies anon everything except `keepalive` (and, after 700, the
+   demo rows); signup is rejected by the allowlist trigger.
 
 Commits: `9126f45` → `fa7fc7a` → `5e2280c` → `b6bffba` → `2435fa2`.
 
@@ -90,8 +100,8 @@ Commits: `9126f45` → `fa7fc7a` → `5e2280c` → `b6bffba` → `2435fa2`.
 | Tests | 64 passing (`npm test`): domain calculations, Excel import, QC counter, migrations + RLS on PGlite |
 | Lint / typecheck | clean (`npm run lint`, `npm run typecheck`) |
 | Deploy | green; push to `main` touching `20260927/**` deploys automatically |
-| Cloud DB | all 6 migrations applied; registration closed; allowlist empty |
-| Accounts | owner = admin (holds the real data); `dev@example.com` = empty test account |
+| Cloud DB | all 7 migrations applied (700 by hand in the SQL editor, recorded in `supabase_migrations.schema_migrations`); registration closed; allowlist empty |
+| Accounts | owner = admin (holds the real data); `dev@example.com` = demo account with sample data (bookings `DEMO01`–`DEMO06`), set as `private.app_config.demo_user_id`; its password is known only to the owner (the old public one was changed on 2026-09-27 and all sessions revoked) |
 | Keep-alive | `.github/workflows/keepalive.yml`, every 3 days → `rpc/keepalive` |
 | Local Supabase (Docker) | still has an older copy of the data under `dev@example.com`; not used by the live site |
 | Backups | owner keeps JSON + SQL backups outside the repo (`D:\Users\Rhys\Documents\FlyingBlue-backups\`) |
@@ -150,18 +160,25 @@ npm run dev                      # http://localhost:3000, uses .env.local (local
 - **`<datalist>` filters by the input's text.** A prefilled input shows only matching
   suggestions. `AirlineInput` works around it (see timeline item 7); `AirportInput`
   still has the plain behaviour.
+- **The demo account's data is world-readable.** Never put real data in the account
+  that `demo_user_id` points at. Writes in demo mode must go through `useAction` (which
+  blocks them); the database refuses them regardless.
+- **Migrations applied by hand** (SQL editor, when no `sbp_` token is available) must be
+  re-runnable and recorded in `supabase_migrations.schema_migrations`, or a later
+  `supabase db push` tries to apply them again.
 - **Playwright pitfall:** `waitForURL(/dashboard/)` also matches
   `/login/?next=%2Fdashboard%2F`; match on the pathname.
 
 ## 7. Open items / ideas
 
-- The test account's password is written in the public README. It only exposes an
-  empty non-admin account, but consider changing it or deleting the account.
 - Excel import cannot know airlines (no column) → imported flights use the placeholder
   airline `UNKNOWN`; category defaults to the owner's default category; purchase date =
   first flight date. Existing `UNKNOWN` segments still need fixing by hand (edit per
-  flight, or SQL `update segments set marketing_airline = 'KL' where marketing_airline
-  = 'UNKNOWN'` after a backup); a bulk "replace airline" tool in Settings is an option.
+  flight, or SQL `update flight_segments set marketing_airline = 'KL' where
+  marketing_airline = 'UNKNOWN'` after a backup); a bulk "replace airline" tool in
+  Settings is an option.
+- Hardening ideas: MFA (TOTP) for the admin account; a Content-Security-Policy `<meta>`
+  (GitHub Pages cannot send headers); pin GitHub Actions to commit SHAs.
 - QC 12-month rules for Silver/Gold without upgrade (requalify or drop one level) are an
   assumption; the owner only specified the upgrade and Platinum −300 rules.
 - Not done yet: offline entry (queue writes in IndexedDB), exchange-rate automation,
