@@ -4,7 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { getSupabase } from '@/lib/supabase/client';
 
-/** Email confirmation landing page: exchanges the token in the URL for a session. */
+/**
+ * Email confirmation landing page. Supabase can come back with ?token_hash=&type=,
+ * ?code= (PKCE) or a session in the URL hash (implicit flow); the client picks up the
+ * hash form by itself while initialising.
+ */
 export default function ConfirmPage() {
   const router = useRouter();
   useEffect(() => {
@@ -13,12 +17,16 @@ export default function ConfirmPage() {
     const type = params.get('type') as EmailOtpType | null;
     const code = params.get('code');
     const supabase = getSupabase();
-    const verify = tokenHash && type
-      ? supabase.auth.verifyOtp({ type, token_hash: tokenHash })
-      : code
-        ? supabase.auth.exchangeCodeForSession(code)
-        : Promise.resolve({ error: new Error('missing token') });
-    verify.then(({ error }) => router.replace(error ? '/login?error=confirmation' : '/dashboard'));
+    const hashError = new URLSearchParams(window.location.hash.slice(1)).get('error_description');
+
+    const verify = async () => {
+      if (hashError) return false;
+      if (tokenHash && type) return !(await supabase.auth.verifyOtp({ type, token_hash: tokenHash })).error;
+      if (code) return !(await supabase.auth.exchangeCodeForSession(code)).error;
+      const { data } = await supabase.auth.getSession(); // waits for the hash to be processed
+      return Boolean(data.session);
+    };
+    verify().then((ok) => router.replace(ok ? '/dashboard' : '/login?error=confirmation'));
   }, [router]);
   return <p className="p-6 text-center text-sm text-ink-2">Confirming your email…</p>;
 }

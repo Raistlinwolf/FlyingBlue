@@ -141,6 +141,12 @@ export async function importBackup(json: string): Promise<ActionResult<Record<st
     const clean = rows
       .filter((r): r is Record<string, unknown> => typeof r === 'object' && r != null)
       .map((r) => ({ ...pick(r, BACKUP_TABLES[table]), user_id: userId }));
+    if (table === 'xp_rules' && clean.length > 0) {
+      // XP rules are configuration: the backup's chart replaces the current one (a new
+      // account already has the default chart, which would otherwise be duplicated).
+      const { error } = await supabase.from('xp_rules').delete().eq('user_id', userId);
+      if (error) return fail(`xp_rules: ${describeDbError(error)}`);
+    }
     for (let i = 0; i < clean.length; i += 500) {
       const { error } = await supabase.from(table).upsert(clean.slice(i, i + 500));
       if (error) return fail(`${table}: ${describeDbError(error)}`);

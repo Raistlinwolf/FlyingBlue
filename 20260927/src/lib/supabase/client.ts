@@ -98,3 +98,36 @@ export function useConfig(): SupabaseConfig | null | undefined {
   );
   return raw === 'prerender' ? undefined : (JSON.parse(raw) as SupabaseConfig | null);
 }
+
+// --- Connection links for other devices ------------------------------------------
+// The URL and key travel in the #fragment, which browsers never send to the web
+// server (GitHub Pages), so the link can be passed to a phone via AirDrop or a message.
+
+const LINK_PARAM = 'connect';
+
+function toBase64Url(text: string): string {
+  return btoa(unescape(encodeURIComponent(text))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function fromBase64Url(text: string): string {
+  const b64 = text.replace(/-/g, '+').replace(/_/g, '/');
+  return decodeURIComponent(escape(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4))));
+}
+
+/** A link that opens the Connect screen with this connection filled in. */
+export function connectionLink(config: SupabaseConfig): string {
+  const base = `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/connect/`;
+  return `${base}#${LINK_PARAM}=${toBase64Url(JSON.stringify({ url: config.url, key: config.key }))}`;
+}
+
+/** Reads a connection from the current URL fragment, if one was shared. */
+export function connectionFromLink(): SupabaseConfig | null {
+  try {
+    const value = new URLSearchParams(window.location.hash.slice(1)).get(LINK_PARAM);
+    if (!value) return null;
+    const parsed = JSON.parse(fromBase64Url(value)) as SupabaseConfig;
+    return typeof parsed.url === 'string' && typeof parsed.key === 'string' ? parsed : null;
+  } catch {
+    return null;
+  }
+}

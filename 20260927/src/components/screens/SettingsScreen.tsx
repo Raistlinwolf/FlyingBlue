@@ -7,15 +7,33 @@ import { DataPanel } from '@/components/settings/DataPanel';
 import { RatesManager } from '@/components/settings/RatesManager';
 import { RulesManager } from '@/components/settings/RulesManager';
 import { SettingsForm } from '@/components/settings/SettingsForm';
-import { Card, CardTitle, PageHeader } from '@/components/ui/primitives';
+import { Button, Card, CardTitle, PageHeader } from '@/components/ui/primitives';
 import { todayIso } from '@/domain/dates';
 import { sortCyclesNewestFirst } from '@/domain/periods';
 import { signOut } from '@/lib/store/auth';
-import { getConfig } from '@/lib/supabase/client';
+import { connectionLink, getConfig } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
 
 export function SettingsScreen() {
   const router = useRouter();
+  const toast = useToast();
   const { email, settings, cycles, rules, data } = useTracker();
+
+  async function shareConnection() {
+    const config = getConfig();
+    if (!config) return;
+    const link = connectionLink(config);
+    try {
+      if (navigator.share && /Mobi|iPad|Android/i.test(navigator.userAgent)) {
+        await navigator.share({ title: 'XP Tracker connection', url: link });
+        return;
+      }
+      await navigator.clipboard.writeText(link);
+      toast('Connection link copied — open it on your phone or iPad');
+    } catch {
+      window.prompt('Copy this link to your other device:', link);
+    }
+  }
   const today = todayIso();
   return (
     <>
@@ -69,6 +87,14 @@ export function SettingsScreen() {
               >
                 Sign out
               </button>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
+              <span className="text-xs text-ink-2">
+                Use XP Tracker on another device: send it this link (contains the database URL and publishable key, not your password).
+              </span>
+              <Button size="sm" onClick={shareConnection}>
+                Copy connection link
+              </Button>
             </div>
             <p className="text-xs text-muted">
               Database: <span className="font-mono">{getConfig()?.url}</span> ·{' '}

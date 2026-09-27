@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
-import { type SupabaseConfig, clearConfig, saveConfig, testConnection, useConfig } from '@/lib/supabase/client';
+import { useEffect, useState, useTransition } from 'react';
+import { type SupabaseConfig, clearConfig, connectionFromLink, saveConfig, testConnection, useConfig } from '@/lib/supabase/client';
 import { Button, Card, Field, Notice } from '@/components/ui/primitives';
 
 const LOCAL_URL = 'http://127.0.0.1:54321';
@@ -18,8 +18,15 @@ export function ConnectForm() {
 
 function ConnectFields({ initial }: { initial: SupabaseConfig | null }) {
   const router = useRouter();
-  const [url, setUrl] = useState(initial?.url ?? LOCAL_URL);
-  const [key, setKey] = useState(initial?.key ?? '');
+  // A shared connection link (…/connect/#connect=…) pre-fills the form.
+  const [fromLink] = useState(() => connectionFromLink());
+  const [url, setUrl] = useState(fromLink?.url ?? initial?.url ?? LOCAL_URL);
+  const [key, setKey] = useState(fromLink?.key ?? initial?.key ?? '');
+
+  useEffect(() => {
+    // Keep the key out of the address bar and history once it has been read.
+    if (fromLink) window.history.replaceState(null, '', window.location.pathname);
+  }, [fromLink]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -45,6 +52,7 @@ function ConnectFields({ initial }: { initial: SupabaseConfig | null }) {
   return (
     <Card>
       <form onSubmit={submit} className="flex flex-col gap-4">
+        {fromLink ? <Notice tone="info">Filled in from a connection link — press Connect.</Notice> : null}
         <Field label="Supabase API URL" hint="Local Supabase: http://127.0.0.1:54321">
           <input className="input font-mono text-sm" value={url} onChange={(e) => setUrl(e.target.value)} autoComplete="off" spellCheck={false} />
         </Field>

@@ -87,7 +87,7 @@ export function DataPanel() {
             confirmVariant="primary"
             pending={pending}
             title="Import this backup?"
-            message="Records are added or updated by their id. Nothing is deleted. Importing the same file twice is safe."
+            message="Records are added or updated by their id; your XP rules are replaced by the ones in the backup. Nothing else is deleted, and importing the same file twice is safe."
             confirmLabel="Import"
             onConfirm={async () => {
               if (!file) return;
