@@ -103,6 +103,11 @@ Browser ── static Next.js export (GitHub Pages, basePath /FlyingBlue)
      the publishable key only: anon reads exactly the demo rows (6 / 15 / 4 / 3 / 1 / 1)
      and AMS from `airports`; insert, update and delete on `bookings` return 42501.
      Deploy run for `3d18cd4` green; the live login page ships "Try the demo".
+   - **README (中文) self-hosting guide:** "用自己的 Supabase 自架" covers creating a
+     project, running the 7 migrations in the SQL editor, allowlist, redirect URL, then
+     either A) this site + `/connect` or B) a fork with repo variables `SUPABASE_URL` /
+     `SUPABASE_PUBLISHABLE_KEY` (without them a fork's build falls back to *this*
+     project's URL and key).
 
 Commits: `9126f45` → `fa7fc7a` → `5e2280c` → `b6bffba` → `2435fa2` → `88b3b2c` (airline
 input) → `3d18cd4` (read-only demo, security review).

@@ -86,6 +86,57 @@ https://supabase.com/dashboard/project/jczyrhbgqvttqkhcahmk
 - **Excel 匯入**：同頁 **Import from Excel**，讀取原試算表的 Earning Log 工作表，重複匯入只會更新。
 - 備份檔含個人資料，請放在 repo 以外的資料夾（`.gitignore` 已排除 `flying-blue-backup-*.json`、`*.xlsx`）。
 
+### 用自己的 Supabase 自架（給其他人使用）
+
+想用這個工具的人，建議開自己的免費 Supabase 專案，資料就完全屬於自己，這個網站的擁有者看不到。
+有兩種做法：**A** 只換資料庫，沿用這個網站；**B** 連網站也自己架（fork）。
+
+**步驟 1｜建立資料庫（A、B 都要做）**
+
+1. 到 https://supabase.com 註冊，**New project**（免費方案即可，區域選離自己近的，例如 Frankfurt 或 Tokyo）。
+2. 左側 **SQL Editor**，依檔名順序，把 [`supabase/migrations/`](supabase/migrations/) 的 7 個檔案逐一貼上並執行
+   （`000100` → `000700`）。`000400_seed_airports.sql` 是機場資料，約 500 KB，貼上與執行要多等一下。
+   **不要**執行 `supabase/seed.sql`（那是本機開發用的）。
+3. 允許自己註冊（註冊預設關閉），在 SQL Editor 執行：
+   ```sql
+   insert into private.signup_allowlist (email) values ('你的 email');
+   ```
+4. **Authentication → URL Configuration**：在 Redirect URLs 加入網站的確認頁
+   （做法 A：`https://raistlinwolf.github.io/FlyingBlue/auth/confirm/`；做法 B：`https://<你的帳號>.github.io/<repo 名稱>/auth/confirm/`），
+   註冊確認信的連結才會帶回網站。
+5. **Project Settings → API Keys**：記下 Project URL（`https://xxxx.supabase.co`）和 **Publishable key**（`sb_publishable_…`）。
+   **Secret key（service-role）和資料庫密碼不要給任何人，也不要貼到網站上。**
+
+**做法 A｜沿用這個網站（最簡單，不用安裝任何東西）**
+
+1. 打開 `https://raistlinwolf.github.io/FlyingBlue/connect/`，貼上自己的 URL 和 Publishable key，按 **Connect**。
+2. 回到登入頁 → **Create an account**，用步驟 1-3 允許的 email 註冊並收信確認，然後登入。
+3. 其他裝置：在 Settings → **Account & database** 複製連線連結，傳到手機打開即可（連線設定只存在各自的瀏覽器）。
+4. 注意：這個網站的程式碼仍由原作者維護與部署。若想完全掌控程式碼，請用做法 B。
+
+**做法 B｜Fork 整個專案，自己的 GitHub Pages**
+
+1. 在 GitHub 把這個 repo **Fork** 到自己的帳號。
+2. Fork 的 repo → **Settings → Secrets and variables → Actions → Variables**，新增兩個 *variables*（不是 secrets）：
+   `SUPABASE_URL` = 你的 Project URL，`SUPABASE_PUBLISHABLE_KEY` = 你的 Publishable key。
+3. **Settings → Pages → Build and deployment → Source** 選 **GitHub Actions**。
+4. **Actions** 分頁：啟用 workflows（fork 預設停用），執行 **Deploy XP Tracker to GitHub Pages** → *Run workflow*。
+   如果 repo 名稱不是 `FlyingBlue`，先把 `.github/workflows/deploy-pages.yml` 裡的 `NEXT_PUBLIC_BASE_PATH: /FlyingBlue` 改成 `/<你的 repo 名稱>`。
+5. 打開 `https://<你的帳號>.github.io/<repo 名稱>/`，註冊並登入。
+6. **Keep Supabase awake** workflow 也會用這兩個 variables 每 3 天連線一次，避免免費專案閒置被暫停。
+
+**之後（A、B 都適用）**
+
+- 讓自己成為管理員（可在 Settings 開關註冊、邀請 email）：
+  ```sql
+  insert into private.admins (user_id) select id from auth.users where email = '你的 email';
+  ```
+- 做法 A 沒有 keep-alive：專案閒置約 7 天會暫停，到 Supabase 網頁按 **Restore project** 即可，資料不會遺失。
+- 登入頁的 **Try the demo** 在新資料庫上是空的；要開放唯讀展示，先建一個展示帳號放範例資料，再執行
+  `update private.app_config set demo_user_id = (select id from auth.users where email = '展示帳號 email');`
+  （展示帳號的資料任何人都看得到，不要放真實資料）。
+- 定期在 Settings 下載 JSON 備份，免費方案沒有可下載的自動備份。
+
 ### 本機資料庫（選用，開發用）
 
 電腦上的 Docker 版 Supabase 仍可用來開發或離線測試（需要 Docker Desktop 與 Node.js）：
