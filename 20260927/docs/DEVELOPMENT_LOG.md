@@ -3,7 +3,7 @@
 Hand-over notes for the next developer or coding agent. Read this first, then
 [ARCHITECTURE.md](ARCHITECTURE.md) (design), [DATABASE.md](DATABASE.md) (schema) and the
 [README](../README.md) (usage, setup). Everything below reflects the state at commit
-`2435fa2` (2026-09-27).
+`3d18cd4` plus the commit that added this sentence (2026-09-27).
 
 ## 1. What this is
 
@@ -90,14 +90,28 @@ Browser ── static Next.js export (GitHub Pages, basePath /FlyingBlue)
    user's password to someone else's Supabase). Review findings: no secrets in the
    history; the live API denies anon everything except `keepalive` (and, after 700, the
    demo rows); signup is rejected by the allowlist trigger.
+   - **Demo data** was written into `dev@example.com` through the public API as that
+     user (so RLS applied): Silver → Gold cycle "FB 2026" (target 180, carry-over 12),
+     6 bookings `DEMO01`–`DEMO06` (flown / booked / planned / cancelled, KL·SK·AF·CI,
+     one priced in TWD), 15 flights, 4 XP transactions (card, SAF, promotion), 3 credits
+     (EC261, refund, employer reimbursement), a TWD→EUR rate. Re-create it with
+     `scripts/seed-demo.ps1` (asks for the password; refuses if bookings exist).
+   - **Test password:** the public one was replaced by a random password (owner has
+     it), then `logout?scope=global` revoked every session; verified the old one fails.
+   - **Migration 700 applied by the owner** in the SQL editor (with the
+     `demo_user_id` update and the `schema_migrations` row). Verified from outside with
+     the publishable key only: anon reads exactly the demo rows (6 / 15 / 4 / 3 / 1 / 1)
+     and AMS from `airports`; insert, update and delete on `bookings` return 42501.
+     Deploy run for `3d18cd4` green; the live login page ships "Try the demo".
 
-Commits: `9126f45` → `fa7fc7a` → `5e2280c` → `b6bffba` → `2435fa2`.
+Commits: `9126f45` → `fa7fc7a` → `5e2280c` → `b6bffba` → `2435fa2` → `88b3b2c` (airline
+input) → `3d18cd4` (read-only demo, security review).
 
 ## 4. Current state
 
 | Item | State |
 |---|---|
-| Tests | 64 passing (`npm test`): domain calculations, Excel import, QC counter, migrations + RLS on PGlite |
+| Tests | 65 passing in CI (`npm test`): domain calculations, Excel import, QC counter, migrations + RLS (incl. read-only demo) on PGlite |
 | Lint / typecheck | clean (`npm run lint`, `npm run typecheck`) |
 | Deploy | green; push to `main` touching `20260927/**` deploys automatically |
 | Cloud DB | all 7 migrations applied (700 by hand in the SQL editor, recorded in `supabase_migrations.schema_migrations`); registration closed; allowlist empty |
