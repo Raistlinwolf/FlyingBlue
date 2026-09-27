@@ -14,7 +14,7 @@ JSON/CSV export. Installable PWA; mobile-first.
 
 - **Live:** https://raistlinwolf.github.io/FlyingBlue/ (GitHub Pages, static)
 - **Database:** Supabase cloud project `jczyrhbgqvttqkhcahmk` (Frankfurt, free plan)
-- **Code:** `20260927/` in `Raistlinwolf/FlyingBlue` (the repo root also holds an older
+- **Code:** `20260927/` in `Raistlinwolf/FlyingBlue` (`Draft/` at the repo root holds an older
   vanilla-JS prototype: `index.html`, `airports.js`, … — untouched, and `airports.js`
   is the source of the airport seed).
 
@@ -108,6 +108,11 @@ Browser ── static Next.js export (GitHub Pages, basePath /FlyingBlue)
      either A) this site + `/connect` or B) a fork with repo variables `SUPABASE_URL` /
      `SUPABASE_PUBLISHABLE_KEY` (without them a fork's build falls back to *this*
      project's URL and key).
+   - **README restructured** into two mirrored halves, `## 中文` and `## English`, with
+     the same 14 sections in the same order (previously each language had sections the
+     other lacked). Keep them in sync when editing either one.
+   - **Fix:** the prototype moved to `Draft/` (commit `6f877f2`), so
+     `npm run db:seed-airports` now defaults to `../Draft/airports.js`.
 
 Commits: `9126f45` → `fa7fc7a` → `5e2280c` → `b6bffba` → `2435fa2` → `88b3b2c` (airline
 input) → `3d18cd4` (read-only demo, security review).

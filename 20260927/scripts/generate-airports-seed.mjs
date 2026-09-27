@@ -1,5 +1,5 @@
 // Generates the airports seed migration from the OpenFlights-format airports list
-// (../airports.js in the repository root) and OpenFlights' country table.
+// (Draft/airports.js in the repository root, the old prototype) and OpenFlights' country table.
 //
 //   node scripts/generate-airports-seed.mjs [path/to/airports.js]
 //
@@ -9,7 +9,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const source = resolve(process.argv[2] ?? resolve(here, '../../airports.js'));
+const source = resolve(process.argv[2] ?? resolve(here, '../../Draft/airports.js'));
 const countriesFile = resolve(here, 'data/openflights-countries.dat');
 const output = resolve(here, '../supabase/migrations/20260927000400_seed_airports.sql');
 
