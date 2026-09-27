@@ -123,6 +123,11 @@ npm run dev                      # http://localhost:3000, uses .env.local (local
   written into nested folders (`__next.!KGFwcCk/dashboard/__PAGE__.txt`) instead of
   dotted names, causing 404s on client navigation. Linux (CI) builds are correct. For
   local Windows testing run `node scripts/fix-windows-export.mjs out` after the build.
+- **GitHub Pages source must be "GitHub Actions".** While it was still "Deploy from a
+  branch", every push ran both our workflow and GitHub's built-in "pages build and
+  deployment" (which publishes the repo root = the old prototype); whichever finished
+  last won, so the live site flipped between versions. Fixed on 2026-09-27 in
+  Settings → Pages. If the old "Flying Blue XP 計算器" page ever reappears, check this first.
 - **Git Bash path conversion** turns `NEXT_PUBLIC_BASE_PATH=/FlyingBlue` into a Windows
   path; prefix with `MSYS_NO_PATHCONV=1`.
 - **The owner's machine has no Node.js installed**; advice must not assume `npx` works
