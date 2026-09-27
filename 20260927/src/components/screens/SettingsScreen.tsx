@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTracker } from '@/components/data/tracker-context';
+import { AdminPanel } from '@/components/settings/AdminPanel';
+import { ChangePasswordForm } from '@/components/settings/ChangePasswordForm';
 import { CyclesManager } from '@/components/settings/CyclesManager';
 import { DataPanel } from '@/components/settings/DataPanel';
 import { RatesManager } from '@/components/settings/RatesManager';
@@ -17,7 +19,7 @@ import { useToast } from '@/components/ui/Toast';
 export function SettingsScreen() {
   const router = useRouter();
   const toast = useToast();
-  const { email, settings, cycles, rules, data } = useTracker();
+  const { email, settings, cycles, rules, data, isAdmin } = useTracker();
 
   async function shareConnection() {
     const config = getConfig();
@@ -72,6 +74,12 @@ export function SettingsScreen() {
           <CardTitle>Import & export</CardTitle>
           <DataPanel />
         </Card>
+        {isAdmin ? (
+          <Card id="admin">
+            <CardTitle>Admin · registration</CardTitle>
+            <AdminPanel />
+          </Card>
+        ) : null}
         <Card>
           <CardTitle>Account & database</CardTitle>
           <div className="flex flex-col gap-3 text-sm">
@@ -88,6 +96,11 @@ export function SettingsScreen() {
                 Sign out
               </button>
             </div>
+            {email ? (
+              <div className="border-t border-line pt-3">
+                <ChangePasswordForm email={email} />
+              </div>
+            ) : null}
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
               <span className="text-xs text-ink-2">
                 Use XP Tracker on another device: send it this link (contains the database URL and publishable key, not your password).

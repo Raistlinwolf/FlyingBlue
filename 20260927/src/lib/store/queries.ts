@@ -13,6 +13,7 @@ import type {
 } from '@/domain/types';
 import { DEFAULT_SETTINGS } from '@/domain/types';
 import { getSupabase } from '@/lib/supabase/client';
+import { loadIsAdmin } from './admin';
 
 const PAGE_SIZE = 1000; // PostgREST's default max rows per request
 
@@ -34,6 +35,7 @@ export interface Everything {
   rules: XpRule[];
   email: string | null;
   userId: string;
+  isAdmin: boolean;
 }
 
 export async function requireSession() {
@@ -46,7 +48,7 @@ export async function requireSession() {
 export async function loadEverything(): Promise<Everything> {
   const user = await requireSession();
   const supabase = getSupabase();
-  const [bookings, segments, xpTransactions, credits, exchangeRates, cycles, rules, settingsRes] = await Promise.all([
+  const [bookings, segments, xpTransactions, credits, exchangeRates, cycles, rules, settingsRes, isAdmin] = await Promise.all([
     fetchAll<Booking>('bookings', 'purchase_date'),
     fetchAll<FlightSegment>('flight_segments', 'flight_date'),
     fetchAll<XpTransaction>('xp_transactions', 'transaction_date'),
@@ -55,6 +57,7 @@ export async function loadEverything(): Promise<Everything> {
     fetchAll<QualificationCycle>('qualification_cycles', 'start_date'),
     fetchAll<XpRule>('xp_rules', 'effective_from'),
     supabase.from('user_settings').select('*').maybeSingle(),
+    loadIsAdmin(),
   ]);
   if (settingsRes.error) throw new Error(`Loading settings failed: ${settingsRes.error.message}`);
   return {
@@ -64,5 +67,6 @@ export async function loadEverything(): Promise<Everything> {
     rules,
     email: user.email ?? null,
     userId: user.id,
+    isAdmin,
   };
 }

@@ -131,6 +131,46 @@ describe('row level security', () => {
   });
 });
 
+describe('admin and registration switch', () => {
+  it('rejects admin functions for non-admins', async () => {
+    await asUser(userB, async () => {
+      const res = await db.query<{ is_admin: boolean }>('select public.is_admin()');
+      expect(res.rows[0].is_admin).toBe(false);
+      await expect(db.query('select public.admin_set_registration_open(true)')).rejects.toThrow(/Only an admin/);
+      await expect(db.query(`select public.admin_allow_email('x@example.com', true)`)).rejects.toThrow(/Only an admin/);
+    });
+  });
+
+  it('lets an admin open and close registration and manage the allowlist', async () => {
+    await db.query('insert into private.admins (user_id) values ($1)', [userA]);
+    await asUser(userA, async () => {
+      expect((await db.query<{ is_admin: boolean }>('select public.is_admin()')).rows[0].is_admin).toBe(true);
+      await db.query('select public.admin_set_registration_open(true)');
+    });
+    // While open, anyone can register.
+    await createUser('newcomer@example.com');
+
+    await asUser(userA, async () => {
+      await db.query('select public.admin_set_registration_open(false)');
+      await db.query(`select public.admin_allow_email('Invited@Example.com', true)`);
+      const status = await db.query<{ registration_open: boolean; allowlist: string[] }>('select * from public.admin_registration_status()');
+      expect(status.rows[0].registration_open).toBe(false);
+      expect(status.rows[0].allowlist).toContain('invited@example.com');
+      await expect(db.query(`select public.admin_allow_email('not-an-email', true)`)).rejects.toThrow(/valid email/);
+    });
+    // Closed again: only allow-listed emails get in.
+    await expect(createUser('stranger@example.com')).rejects.toThrow(/SIGNUP_NOT_ALLOWED/);
+    await createUser('invited@example.com');
+  });
+
+  it('exposes a harmless keep-alive probe to anonymous callers', async () => {
+    await asUser(null, async () => {
+      const res = await db.query<{ keepalive: string }>('select public.keepalive()');
+      expect(res.rows[0].keepalive).toBeTruthy();
+    });
+  });
+});
+
 describe('constraints', () => {
   it('rejects overlapping qualification cycles but allows adjacent ones', async () => {
     await asUser(userA, async () => {

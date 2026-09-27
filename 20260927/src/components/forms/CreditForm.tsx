@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { saveCredit } from '@/lib/store/records';
 import { CREDIT_TYPES, type Credit, type CreditType } from '@/domain/types';
-import { Button, Card, Field } from '@/components/ui/primitives';
+import { Button, Card, Field, LinkButton } from '@/components/ui/primitives';
 import { useAction } from '@/components/ui/useAction';
 import { CurrencyInput, Select, Toggle } from './inputs';
 import type { BookingChoice } from './XpTransactionForm';
@@ -111,7 +111,11 @@ export function CreditForm({
           <input className="input" value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
         </Field>
       </div>
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {/* New entries come from the quick-add menu: cancel returns to the dashboard. */}
+        <LinkButton href={existing ? '/history?tab=credits' : '/dashboard'} size="lg">
+          Cancel
+        </LinkButton>
         <Button variant="primary" size="lg" pending={pending} onClick={save}>
           {existing ? 'Save changes' : 'Save credit'}
         </Button>

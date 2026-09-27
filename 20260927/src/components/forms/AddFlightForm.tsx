@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { addSegments } from '@/lib/store/travel';
 import type { Cabin, XpRule } from '@/domain/types';
 import type { RecentBookingOption } from '@/lib/entry-context';
-import { Button, Card, EmptyState, Field, buttonClass } from '@/components/ui/primitives';
+import { Button, Card, EmptyState, Field, LinkButton, buttonClass } from '@/components/ui/primitives';
 import { useAction } from '@/components/ui/useAction';
 import { SegmentEditor } from './SegmentEditor';
 import { type SegmentDraft, draftErrors, draftToInput, emptyDraft } from './segment-draft';
@@ -92,7 +92,10 @@ export function AddFlightForm({
         showErrors={showErrors}
         defaults={defaultsFor(bookingId)}
       />
-      <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-10 flex justify-end md:bottom-4">
+      <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-10 flex justify-end gap-2 md:bottom-4">
+        <LinkButton href="/dashboard" size="lg" className="shadow-lg">
+          Cancel
+        </LinkButton>
         <Button variant="primary" size="lg" pending={pending} onClick={save} className="shadow-lg">
           Save {segments.length === 1 ? 'flight' : `${segments.length} flights`}
         </Button>

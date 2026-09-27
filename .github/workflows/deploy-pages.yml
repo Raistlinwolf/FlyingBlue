@@ -2,9 +2,11 @@
 #   https://raistlinwolf.github.io/FlyingBlue/
 # One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
 #
-# No database address or key is built in: the app asks for them on its Connect screen
-# and keeps them in the browser. (Optionally set repository variables SUPABASE_URL and
-# SUPABASE_PUBLISHABLE_KEY to pre-fill a hosted project.)
+# The site connects to the Supabase cloud project below out of the box. The URL and the
+# *publishable* key are public by design (they reach every browser anyway); the data is
+# protected by Row Level Security and registration is closed. Never put the secret /
+# service-role key or the database password here. Repository variables SUPABASE_URL and
+# SUPABASE_PUBLISHABLE_KEY override these defaults.
 name: Deploy XP Tracker to GitHub Pages
 
 on:
@@ -50,8 +52,8 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_BASE_PATH: /FlyingBlue
-          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://jczyrhbgqvttqkhcahmk.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_MjgDfM3Q2eeLOdDlvrggAQ_4qH6OKn3' }}
 
       - uses: actions/configure-pages@v6
 

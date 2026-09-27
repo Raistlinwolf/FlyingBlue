@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { createBookingWithSegments } from '@/lib/store/travel';
 import type { BookingCategory, Cabin, XpRule } from '@/domain/types';
-import { Button, Card, CardTitle } from '@/components/ui/primitives';
+import { Button, Card, CardTitle, LinkButton } from '@/components/ui/primitives';
 import { useAction } from '@/components/ui/useAction';
 import { type BookingDraft, BookingFields, bookingDraftToInput } from './BookingFields';
 import { SegmentEditor } from './SegmentEditor';
@@ -112,6 +112,9 @@ export function NewBookingForm({
       </section>
 
       <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-10 flex justify-end gap-2 md:bottom-4">
+        <LinkButton href="/dashboard" size="lg" className="shadow-lg">
+          Cancel
+        </LinkButton>
         <Button variant="primary" size="lg" pending={pending} onClick={save} className="shadow-lg">
           Save booking{filled.length > 0 ? ` · ${filled.length} flight${filled.length === 1 ? '' : 's'}` : ''}
         </Button>

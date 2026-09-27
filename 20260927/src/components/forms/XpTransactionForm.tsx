@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { saveXpTransaction } from '@/lib/store/records';
 import { XP_SOURCE_TYPES, XP_TRANSACTION_STATUSES, type XpSourceType, type XpTransaction, type XpTransactionStatus } from '@/domain/types';
-import { Button, Card, Field } from '@/components/ui/primitives';
+import { Button, Card, Field, LinkButton } from '@/components/ui/primitives';
 import { useAction } from '@/components/ui/useAction';
 import { CurrencyInput, Segmented, Select } from './inputs';
 
@@ -126,7 +126,11 @@ export function XpTransactionForm({
           <input className="input" value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
         </Field>
       </div>
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {/* New entries come from the quick-add menu: cancel returns to the dashboard. */}
+        <LinkButton href={existing ? '/history?tab=xp' : '/dashboard'} size="lg">
+          Cancel
+        </LinkButton>
         <Button variant="primary" size="lg" pending={pending} onClick={save}>
           {existing ? 'Save changes' : 'Save XP'}
         </Button>
