@@ -1,7 +1,7 @@
 // Preferences, qualification cycles, XP rules, exchange rates and backup import.
 import { validateCycle } from '@/domain/periods';
 import type { QualificationCycle } from '@/domain/types';
-import { type ActionResult, describeDbError, fail, ok } from '@/lib/action-result';
+import { type ActionResult, describeDbError, fail, noRowChanged, ok } from '@/lib/action-result';
 import { getSupabase } from '@/lib/supabase/client';
 import { requireSession } from './queries';
 import { BACKUP_TABLES, type BackupTable } from '@/lib/backup';
@@ -61,10 +61,12 @@ export async function saveXpRule(id: string | null, input: XpRuleInput): Promise
   const parsed = xpRuleSchema.safeParse(input);
   if (!parsed.success) return fail(firstIssue(parsed.error));
   const supabase = getSupabase();
-  const { error } = id
-    ? await supabase.from('xp_rules').update(parsed.data).eq('id', id)
-    : await supabase.from('xp_rules').insert(parsed.data);
+  const { data, error } = id
+    ? await supabase.from('xp_rules').update(parsed.data).eq('id', id).select('id')
+    : await supabase.from('xp_rules').insert(parsed.data).select('id');
   if (error) return fail(describeDbError(error));
+  const missing = noRowChanged(data);
+  if (missing) return fail(missing);
   return ok(null);
 }
 

@@ -30,7 +30,7 @@ Row Level Security still applies, so the publishable key is safe to use.
 
 ## 快速開始（中文）
 
-1. 開啟 Docker Desktop，在 `20260927/` 執行 `npx supabase start`（第一次會下載映像檔）。
+1. 開啟 Docker Desktop，在 `20260927/` 執行 `npx supabase start`（第一次會下載映像檔；需要先安裝 Node.js，見下方「需要 npx 的時候」）。之後開機只要開著 Docker Desktop 即可。
 2. `npx supabase status` 找到 **API URL**（`http://127.0.0.1:54321`）和 **Publishable key**。
 3. 允許你的 Email 註冊（只需一次）：
    ```bash
@@ -43,17 +43,44 @@ Row Level Security still applies, so the publishable key is safe to use.
 6. 資料只存在你電腦的 Docker 裡。`npx supabase stop` 會保留資料；
    **不要**執行 `npx supabase db reset`（會清空）。定期到 Settings 下載 JSON 備份。
 
+### 平常使用：只要開 Docker Desktop
+
+本機 Supabase 的容器設定為自動重啟（`unless-stopped`），開機後只要 Docker Desktop 在跑，
+資料庫就會自己啟動，**不需要**任何指令，直接打開網站即可。
+
 ### 忘記 URL 或 key？
+
+本機 Supabase 的連線資訊是固定的預設值（每台電腦的本機 Supabase 都一樣，不是秘密）：
+
+| 欄位 | 值 |
+|---|---|
+| Supabase API URL | `http://127.0.0.1:54321` |
+| Publishable key | `sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH` |
 
 - **App 內**：Settings 最下方「Account & database」顯示目前的資料庫網址；按 **change connection**
   進入 Connect 頁，欄位會帶出已儲存的 URL 和 key。
-- **本機指令**：在 `20260927/` 執行 `npx supabase status`，會列出 **API URL** 和 **Publishable key**
-  （本機固定為 `http://127.0.0.1:54321`）。換電腦或換瀏覽器時用這個方法。
+- **指令**（需要 Node.js，見下方）：在 `20260927/` 執行 `npx supabase status`。
+- 確認資料庫有在跑（只需要 Docker）：`docker ps --filter name=flying-blue`，應看到 4 個容器。
+
+### 需要 `npx` 的時候：安裝 Node.js
+
+`npx supabase ...`（start / stop / status / db dump）需要 Node.js。若出現
+`'npx' is not recognized`，安裝 Node.js LTS 後**重新開一個終端機**：
+
+```bat
+winget install OpenJS.NodeJS.LTS
+```
+
+（或到 https://nodejs.org 下載 LTS 安裝檔。）只用網站和 Docker Desktop 的話不需要安裝。
 
 ### 備份與還原
 
 - **App 備份**：Settings → Import & export → **Download JSON backup**。還原：同頁的 *Restore from JSON backup*。
-- **整個資料庫**（含帳號）：`npx supabase db dump --local --data-only -f backup.sql`。
+- **整個資料庫**（含帳號，只需要 Docker）：
+  ```bat
+  docker exec supabase_db_flying-blue-xp-tracker pg_dump -U postgres --data-only --schema=public --schema=auth --schema=private postgres > backup.sql
+  ```
+  有安裝 Node.js 的話也可以用 `npx supabase db dump --local --data-only -f backup.sql`。
 - 備份檔含個人資料，請放在 repo 以外的資料夾（`.gitignore` 已排除 `flying-blue-backup-*.json`）。
 
 ## 功能（中文）

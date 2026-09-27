@@ -1,7 +1,7 @@
 // Bookings and flight segments.
 import type { Booking, FlightSegment, TravelStatus } from '@/domain/types';
 import { TRAVEL_STATUSES } from '@/domain/types';
-import { type ActionResult, describeDbError, fail, ok } from '@/lib/action-result';
+import { type ActionResult, describeDbError, fail, noRowChanged, ok } from '@/lib/action-result';
 import { getSupabase } from '@/lib/supabase/client';
 import {
   type BookingInput,
@@ -42,18 +42,37 @@ export async function updateBooking(id: string, input: BookingInput): Promise<Ac
   const parsed = bookingSchema.safeParse(input);
   if (!parsed.success) return fail(firstIssue(parsed.error));
   const supabase = getSupabase();
-  const { error } = await supabase.from('bookings').update(parsed.data).eq('id', id);
+  const { data: before, error: loadError } = await supabase.from('bookings').select('status').eq('id', id).maybeSingle();
+  if (loadError) return fail(describeDbError(loadError));
+  if (!before) return fail(noRowChanged(null)!);
+
+  const { data, error } = await supabase.from('bookings').update(parsed.data).eq('id', id).select('id');
   if (error) return fail(describeDbError(error));
+  const missing = noRowChanged(data);
+  if (missing) return fail(missing);
+
+  // Flight XP follows the flights, so booking status changes are passed on to them.
   if (parsed.data.status === 'Cancelled') {
-    await supabase.from('flight_segments').update({ segment_status: 'Cancelled' }).eq('booking_id', id);
+    const { error: segError } = await supabase.from('flight_segments').update({ segment_status: 'Cancelled' }).eq('booking_id', id);
+    if (segError) return fail(describeDbError(segError));
+  } else if (before.status === 'Flown' && (parsed.data.status === 'Booked' || parsed.data.status === 'Planned')) {
+    // "Not flown after all": un-fly its flown flights and clear their credited XP.
+    const { error: segError } = await supabase
+      .from('flight_segments')
+      .update({ segment_status: parsed.data.status, actual_xp: null })
+      .eq('booking_id', id)
+      .eq('segment_status', 'Flown');
+    if (segError) return fail(describeDbError(segError));
   }
   return ok(null);
 }
 
 export async function cancelBooking(id: string): Promise<ActionResult> {
   const supabase = getSupabase();
-  const { error } = await supabase.from('bookings').update({ status: 'Cancelled' }).eq('id', id);
+  const { data, error } = await supabase.from('bookings').update({ status: 'Cancelled' }).eq('id', id).select('id');
   if (error) return fail(describeDbError(error));
+  const missing = noRowChanged(data);
+  if (missing) return fail(missing);
   const { error: segError } = await supabase
     .from('flight_segments')
     .update({ segment_status: 'Cancelled' })
@@ -151,8 +170,10 @@ export async function updateSegment(id: string, input: SegmentInput): Promise<Ac
   if (!parsed.success) return fail(firstIssue(parsed.error));
   const supabase = getSupabase();
   const { id: _id, ...row } = parsed.data;
-  const { error } = await supabase.from('flight_segments').update(row).eq('id', id);
+  const { data, error } = await supabase.from('flight_segments').update(row).eq('id', id).select('id');
   if (error) return fail(describeDbError(error));
+  const missing = noRowChanged(data);
+  if (missing) return fail(missing);
   return ok(null);
 }
 
@@ -198,7 +219,29 @@ export async function markSegmentFlown(id: string, actualXp?: number): Promise<A
 export async function setSegmentStatus(id: string, status: TravelStatus): Promise<ActionResult> {
   if (!TRAVEL_STATUSES.includes(status)) return fail('Unknown status.');
   const supabase = getSupabase();
-  const { error } = await supabase.from('flight_segments').update({ segment_status: status }).eq('id', id);
+  const { data, error } = await supabase.from('flight_segments').update({ segment_status: status }).eq('id', id).select('id');
   if (error) return fail(describeDbError(error));
+  const missing = noRowChanged(data);
+  if (missing) return fail(missing);
+  return ok(null);
+}
+
+/** Undo "Flown": back to Booked with the credited XP cleared; the booking follows. */
+export async function unmarkSegmentFlown(id: string): Promise<ActionResult> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('flight_segments')
+    .update({ segment_status: 'Booked', actual_xp: null })
+    .eq('id', id)
+    .select('booking_id');
+  if (error) return fail(describeDbError(error));
+  const missing = noRowChanged(data);
+  if (missing) return fail(missing);
+  const { error: bookingError } = await supabase
+    .from('bookings')
+    .update({ status: 'Booked' })
+    .eq('id', data![0].booking_id)
+    .eq('status', 'Flown');
+  if (bookingError) return fail(describeDbError(bookingError));
   return ok(null);
 }

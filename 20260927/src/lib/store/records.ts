@@ -1,5 +1,5 @@
 // XP transactions, credits, and archive/restore/delete for every record type.
-import { type ActionResult, describeDbError, fail, ok } from '@/lib/action-result';
+import { type ActionResult, describeDbError, fail, noRowChanged, ok } from '@/lib/action-result';
 import { getSupabase } from '@/lib/supabase/client';
 import {
   type CreditInput,
@@ -65,16 +65,20 @@ export async function duplicateXpTransaction(id: string): Promise<ActionResult<{
 export async function archiveRecord(table: ArchivableTable, id: string): Promise<ActionResult> {
   if (!ARCHIVABLE.includes(table)) return fail('Unknown record type.');
   const supabase = getSupabase();
-  const { error } = await supabase.from(table).update({ archived_at: new Date().toISOString() }).eq('id', id);
+  const { data, error } = await supabase.from(table).update({ archived_at: new Date().toISOString() }).eq('id', id).select('id');
   if (error) return fail(describeDbError(error));
+  const missing = noRowChanged(data);
+  if (missing) return fail(missing);
   return ok(null);
 }
 
 export async function restoreRecord(table: ArchivableTable, id: string): Promise<ActionResult> {
   if (!ARCHIVABLE.includes(table)) return fail('Unknown record type.');
   const supabase = getSupabase();
-  const { error } = await supabase.from(table).update({ archived_at: null }).eq('id', id);
+  const { data, error } = await supabase.from(table).update({ archived_at: null }).eq('id', id).select('id');
   if (error) return fail(describeDbError(error));
+  const missing = noRowChanged(data);
+  if (missing) return fail(missing);
   return ok(null);
 }
 

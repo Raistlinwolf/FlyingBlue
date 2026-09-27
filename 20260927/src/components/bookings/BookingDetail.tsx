@@ -9,6 +9,7 @@ import {
   duplicateSegment,
   markSegmentFlown,
   setSegmentStatus,
+  unmarkSegmentFlown,
   updateBooking,
 } from '@/lib/store/travel';
 import { incrementalCost, routingLines, sortSegments } from '@/domain/bookings';
@@ -240,6 +241,18 @@ function SegmentItem({ segment: s, booking }: { segment: FlightSegment; booking:
             ✓ Flown
           </Button>
         ) : null}
+        {!archived && s.segment_status === 'Flown' ? (
+          <ConfirmButton
+            variant="ghost"
+            confirmVariant="primary"
+            title="Mark this flight as not flown?"
+            message="It goes back to Booked and its credited XP is cleared, so its expected XP counts as booked again."
+            confirmLabel="Undo flown"
+            onConfirm={() => run(() => unmarkSegmentFlown(s.id), 'Flight set back to booked')}
+          >
+            ↩ Undo flown
+          </ConfirmButton>
+        ) : null}
         {!archived ? (
           <Button size="sm" variant="ghost" onClick={() => run(() => duplicateSegment(s.id), 'Flight duplicated')}>
             Duplicate
@@ -294,6 +307,16 @@ function BookingEditor({ booking, onDone }: { booking: Booking; onDone: () => vo
   return (
     <div className="mt-4 border-t border-line pt-4">
       <BookingFields value={draft} onChange={(p) => setDraft((d) => ({ ...d, ...p }))} showErrors={showErrors} showStatus />
+      {booking.status === 'Flown' && (draft.status === 'Booked' || draft.status === 'Planned') ? (
+        <div className="mt-2">
+          <Notice tone="info">Its flown flights will also be set to {draft.status} and their credited XP cleared.</Notice>
+        </div>
+      ) : null}
+      {draft.status === 'Cancelled' && booking.status !== 'Cancelled' ? (
+        <div className="mt-2">
+          <Notice>All its flights will be marked cancelled.</Notice>
+        </div>
+      ) : null}
       <div className="mt-3 flex justify-end gap-2">
         <Button variant="ghost" onClick={onDone}>
           Discard
