@@ -2,11 +2,11 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CostSummary } from '@/components/dashboard/CostSummary';
-import { CumulativeChart } from '@/components/dashboard/CumulativeChart';
 import { MonthlyTable } from '@/components/dashboard/MonthlyTable';
 import { PeriodSelector } from '@/components/dashboard/PeriodSelector';
 import { SourceBreakdown } from '@/components/dashboard/SourceBreakdown';
 import { StatTile } from '@/components/dashboard/StatTile';
+import { XpCounterChart } from '@/components/dashboard/XpCounterChart';
 import { XpProgress } from '@/components/dashboard/XpProgress';
 import { useTracker } from '@/components/data/tracker-context';
 import { Card, CardTitle, LinkButton, PageHeader } from '@/components/ui/primitives';
@@ -19,6 +19,7 @@ import {
   resolvePeriod,
   sortCyclesNewestFirst,
 } from '@/domain/periods';
+import { xpCounterSeries } from '@/domain/qualification';
 import { computeSummary } from '@/domain/summary';
 import { formatXp } from '@/lib/format';
 
@@ -29,6 +30,12 @@ export function DashboardScreen() {
   const period = resolvePeriod(params.get('period') ?? undefined, cycles, today, settings.xp_target);
   const summary = computeSummary(data, period, settings.preferred_currency);
   const { xp, counts } = summary;
+  const counter = xpCounterSeries(
+    data,
+    summary.months.map((m) => m.month),
+    cycles,
+    { status: settings.current_status },
+  );
 
   const cycleOptions = sortCyclesNewestFirst(cycles).map((c) => ({ key: cyclePeriod(c).key, label: c.name }));
   const yearOptions = availableYears(data, today).map((y) => ({ key: calendarYearPeriod(y).key, label: String(y) }));
@@ -95,19 +102,20 @@ export function DashboardScreen() {
           <StatTile label="XP surplus" value={xp.surplus == null ? '—' : formatXp(xp.surplus)} tone={xp.surplus ? 'good' : 'default'} />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[2fr_3fr]">
-          <CostSummary summary={summary} />
-          <SourceBreakdown summary={summary} />
+        {/* Same 5-column grid and gap as the tiles above, so the card edges line up. */}
+        <div className="grid grid-cols-1 gap-2 lg:grid-cols-5">
+          <CostSummary summary={summary} className="lg:col-span-2" />
+          <SourceBreakdown summary={summary} className="lg:col-span-3" />
         </div>
 
         <Card>
-          <CardTitle>Cumulative XP</CardTitle>
-          <CumulativeChart months={summary.months} target={xp.target} currentMonth={monthKey(today)} />
+          <CardTitle>XP counter by qualification cycle</CardTitle>
+          <XpCounterChart series={counter} currentMonth={monthKey(today)} />
         </Card>
 
         <Card>
           <CardTitle>Monthly</CardTitle>
-          <MonthlyTable months={summary.months} currency={summary.reportingCurrency} />
+          <MonthlyTable months={summary.months} counter={counter} currency={summary.reportingCurrency} />
         </Card>
       </div>
     </>

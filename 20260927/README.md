@@ -43,6 +43,42 @@ Row Level Security still applies, so the publishable key is safe to use.
 6. 資料只存在你電腦的 Docker 裡。`npx supabase stop` 會保留資料；
    **不要**執行 `npx supabase db reset`（會清空）。定期到 Settings 下載 JSON 備份。
 
+### 忘記 URL 或 key？
+
+- **App 內**：Settings 最下方「Account & database」顯示目前的資料庫網址；按 **change connection**
+  進入 Connect 頁，欄位會帶出已儲存的 URL 和 key。
+- **本機指令**：在 `20260927/` 執行 `npx supabase status`，會列出 **API URL** 和 **Publishable key**
+  （本機固定為 `http://127.0.0.1:54321`）。換電腦或換瀏覽器時用這個方法。
+
+### 備份與還原
+
+- **App 備份**：Settings → Import & export → **Download JSON backup**。還原：同頁的 *Restore from JSON backup*。
+- **整個資料庫**（含帳號）：`npx supabase db dump --local --data-only -f backup.sql`。
+- 備份檔含個人資料，請放在 repo 以外的資料夾（`.gitignore` 已排除 `flying-blue-backup-*.json`）。
+
+## 功能（中文）
+
+- **快速輸入**：右下角／底部的 **+** → 新增訂票、航班、XP、退款／補償。
+  多段航班會自動接續（AMS → CPH 之後，下一段起點自動帶 CPH），並沿用日期、航空公司、艙等；
+  依 XP 規則自動估算預計 XP。「Add return legs」可一鍵加入回程。
+- **預計 vs 實際 XP**：每一筆航班或 XP 只會算在「已入帳」或「已訂」其中一邊，不會重複計算。
+  按「✓ Flown」即把航班轉為已入帳。
+- **儀表板**：可切換「日曆年」或「資格週期（QC）」。
+  - XP 來源分析（航班、SAF、信用卡、促銷、Choice Benefits、其他）、已入帳／已訂／預估 XP 對照目標。
+  - 花費：總支出、退款、淨支出、增量支出，以及每 XP 成本。
+  - **QC XP 計數長條圖**：Explorer／Silver／Gold 達到目標後，下個月進入新的 QC 並結轉超出的 XP；
+    Platinum 在 12 個月的 QC 結束時扣除 300 XP，其餘結轉。
+  - 每月明細表（入帳、已訂、QC 計數、航段數、花費）。
+- **行事曆**：每月行程，顯示航線、航段數、XP 和行程名稱；點日期看當天明細。
+- **歷史紀錄**：依期間、類別、航空公司、起訖點、XP 來源、狀態篩選；可搜尋機場、航班號、
+  名稱、訂位代號；支援封存與還原。
+- **XP 計算機**：依機場座標算大圓距離，套用可編輯的 XP 規則；可「Save as booking」直接存成訂票。
+- **Excel 匯入**：讀取原本試算表的 Earning Log 工作表，自動把航段歸成訂票、拆出 SAF／信用卡／
+  合作夥伴 XP，並依 Flying Blue 規則重建資格週期與結轉 XP。重複匯入只會更新。
+- **設定**：偏好設定（家鄉機場、預設航空公司／艙等／類別、幣別、會籍、目標、主題）、資格週期、
+  XP 規則、匯率、匯入／匯出、資料庫連線。
+- **PWA**：可安裝到手機或電腦桌面，支援深色模式與離線提示頁。
+
 ## Features
 
 - **Quick entry:** floating **+** → Add booking / flight / XP / credit. Multi-segment
@@ -52,7 +88,9 @@ Row Level Security still applies, so the publishable key is safe to use.
   (credited) or *booked*, never both. "✓ Flown" moves a flight to actual.
 - **Dashboard:** calendar year **or** qualification cycle (with XP carried over from the
   previous cycle); XP by source, booked vs actual vs projected against the target,
-  gross/net/incremental spending, cost per XP, monthly table and cumulative XP chart.
+  gross/net/incremental spending, cost per XP, monthly table and a QC XP-counter bar
+  chart (Explorer/Silver/Gold: a new QC starts the month after reaching the target, the
+  surplus carries over; Platinum: 300 XP is deducted at the end of the 12-month QC).
 - **Calendar:** monthly grid with routing, flight count, XP and trip name.
 - **History:** filter by period, category, airline, origin, destination, XP source,
   status; search airports, flight numbers, names and references; archive/restore.

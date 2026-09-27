@@ -1,9 +1,14 @@
+import type { CounterMonth } from '@/domain/qualification';
 import type { MonthRow } from '@/domain/summary';
 import { formatMonthLabel } from '@/domain/dates';
 import { formatMoney, formatXp } from '@/lib/format';
 
-/** Month-by-month figures; the inline bar shows earned (solid) and booked (lighter) XP. */
-export function MonthlyTable({ months, currency }: { months: MonthRow[]; currency: string }) {
+/**
+ * Month-by-month figures; the inline bar shows earned (solid) and booked (lighter) XP.
+ * "QC counter" is the qualification-cycle XP counter (credited / incl. booked).
+ */
+export function MonthlyTable({ months, counter, currency }: { months: MonthRow[]; counter: CounterMonth[]; currency: string }) {
+  const byMonth = new Map(counter.map((c) => [c.month, c]));
   const max = Math.max(...months.map((m) => m.actualXp + m.bookedXp), 1);
   return (
     <div className="overflow-x-auto">
@@ -16,7 +21,7 @@ export function MonthlyTable({ months, currency }: { months: MonthRow[]; currenc
             </th>
             <th className="pb-2 text-right font-medium">Earned</th>
             <th className="pb-2 text-right font-medium">Booked</th>
-            <th className="pb-2 text-right font-medium">Cumulative</th>
+            <th className="pb-2 text-right font-medium">QC counter</th>
             <th className="pb-2 text-right font-medium">Flights</th>
             <th className="pb-2 text-right font-medium">Spending</th>
           </tr>
@@ -36,8 +41,7 @@ export function MonthlyTable({ months, currency }: { months: MonthRow[]; currenc
                 <td className="py-1.5 text-right">{m.actualXp ? formatXp(m.actualXp) : '—'}</td>
                 <td className="py-1.5 text-right">{m.bookedXp ? `+${formatXp(m.bookedXp)}` : '—'}</td>
                 <td className="py-1.5 text-right">
-                  {formatXp(m.cumulativeActual)}
-                  {m.cumulativeProjected !== m.cumulativeActual ? <span className="text-muted"> / {formatXp(m.cumulativeProjected)}</span> : null}
+                  <CounterCell c={byMonth.get(m.month)} />
                 </td>
                 <td className="py-1.5 text-right">{m.segments || '—'}</td>
                 <td className="py-1.5 text-right">{m.spending ? formatMoney(m.spending, currency, { decimals: 0 }) : '—'}</td>
@@ -47,5 +51,17 @@ export function MonthlyTable({ months, currency }: { months: MonthRow[]; currenc
         </tbody>
       </table>
     </div>
+  );
+}
+
+function CounterCell({ c }: { c: CounterMonth | undefined }) {
+  if (!c) return <>—</>;
+  const total = c.credited + c.booked;
+  return (
+    <>
+      {c.qcStart ? <span className="mr-1 rounded bg-surface-2 px-1 text-[10px] font-medium text-ink-2">{c.status}</span> : null}
+      {formatXp(c.credited)}
+      {c.booked ? <span className="text-muted"> / {formatXp(total)}</span> : null}
+    </>
   );
 }

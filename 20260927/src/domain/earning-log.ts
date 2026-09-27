@@ -13,6 +13,7 @@
 // - Ids are derived from row content, so importing the same sheet twice updates rather
 //   than duplicates.
 import { addMonths, firstDayOfMonth, isIsoDate, lastDayOfMonth, monthKey } from './dates';
+import { LEVEL_THRESHOLDS, levelTarget, lowerLevel, nextLevel } from './qualification';
 import type { BookingCategory, Cabin, FlyingBlueStatus, IsoDate, XpSourceType } from './types';
 
 export interface EarningLogRow {
@@ -361,25 +362,6 @@ export interface SuggestedCycle {
   notes: string;
 }
 
-const LADDER: FlyingBlueStatus[] = ['Explorer', 'Silver', 'Gold', 'Platinum'];
-/** XP needed within a qualification period to reach (or keep) each level. */
-export const LEVEL_THRESHOLDS: Record<FlyingBlueStatus, number> = {
-  Explorer: 0,
-  Silver: 100,
-  Gold: 180,
-  Platinum: 300,
-  Ultimate: 300,
-};
-
-function nextLevel(level: FlyingBlueStatus): FlyingBlueStatus | null {
-  const i = LADDER.indexOf(level);
-  return i >= 0 && i < LADDER.length - 1 ? LADDER[i + 1] : null;
-}
-
-function cycleTarget(level: FlyingBlueStatus): number {
-  const next = nextLevel(level);
-  return next ? LEVEL_THRESHOLDS[next] : LEVEL_THRESHOLDS[level];
-}
 
 /**
  * Reconstructs qualification cycles from credited XP using the Flying Blue mechanics:
@@ -412,7 +394,7 @@ export function suggestCycles(
       start_date,
       end_date: lastDayOfMonth(toMonth),
       starting_status: lvl,
-      target_xp: cycleTarget(lvl),
+      target_xp: levelTarget(lvl),
       carried_over_xp: Math.max(Math.round(carried), 0),
       notes: 'Suggested from imported XP history',
     });
@@ -448,7 +430,7 @@ export function suggestCycles(
     if (level === 'Explorer') carry = 0;
     else if (cumulative >= keep) carry = cumulative - keep;
     else {
-      level = LADDER[Math.max(LADDER.indexOf(level) - 1, 0)];
+      level = lowerLevel(level);
       carry = 0;
     }
     start = addMonths(start, 12);

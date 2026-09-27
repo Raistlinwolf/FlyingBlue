@@ -6,13 +6,13 @@ import { Card, CardTitle } from '@/components/ui/primitives';
  * XP by source as horizontal bars (actual solid, booked lighter), with cost and
  * cost per XP alongside — the numbers are always visible, so the bars never gate them.
  */
-export function SourceBreakdown({ summary }: { summary: Summary }) {
+export function SourceBreakdown({ summary, className = '' }: { summary: Summary; className?: string }) {
   const cur = summary.reportingCurrency;
   const rows = summary.sources;
   const max = Math.max(...rows.map((r) => r.actualXp + r.bookedXp), 1);
 
   return (
-    <Card>
+    <Card className={className}>
       <CardTitle>XP by source</CardTitle>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[22rem] text-sm">

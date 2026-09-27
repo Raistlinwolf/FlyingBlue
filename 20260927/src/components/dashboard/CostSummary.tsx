@@ -2,7 +2,7 @@ import type { Summary } from '@/domain/summary';
 import { formatCostPerXp, formatMoney } from '@/lib/format';
 import { Card, CardTitle, Notice } from '@/components/ui/primitives';
 
-export function CostSummary({ summary }: { summary: Summary }) {
+export function CostSummary({ summary, className = '' }: { summary: Summary; className?: string }) {
   const { costs, reportingCurrency: cur, unconverted } = summary;
   const m = (v: number) => formatMoney(v, cur, { decimals: 0 });
   const rows: [string, string, string?][] = [
@@ -13,7 +13,7 @@ export function CostSummary({ summary }: { summary: Summary }) {
   ];
 
   return (
-    <Card>
+    <Card className={className}>
       <CardTitle>Spending</CardTitle>
       <dl className="text-sm">
         {rows.map(([label, value]) => (
