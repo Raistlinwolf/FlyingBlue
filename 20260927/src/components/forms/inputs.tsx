@@ -1,5 +1,5 @@
 'use client';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 
 export const COMMON_CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'SEK', 'DKK', 'NOK', 'PLN', 'CZK', 'HUF', 'TWD', 'JPY', 'CAD', 'AUD', 'SGD', 'HKD', 'AED'];
 
@@ -64,18 +64,28 @@ export function AirlineInput({
 }) {
   const id = useId();
   const recentSet = new Set(recent);
+  // A browser only suggests options matching the typed text, so a prefilled value hides
+  // the rest of the list. While focused the box shows what is being typed (empty at
+  // first, current value as placeholder); leaving it untouched keeps the current value.
+  const [typed, setTyped] = useState<string | null>(null);
   return (
     <>
       <input
         className="input uppercase"
         aria-label={label}
         aria-invalid={invalid || undefined}
-        value={value}
+        value={typed ?? value}
         list={id}
         maxLength={40}
-        placeholder="KL"
+        placeholder={typed != null && value ? value : 'KL'}
         autoCapitalize="characters"
-        onChange={(e) => onChange(e.target.value.toUpperCase())}
+        onFocus={() => setTyped('')}
+        onBlur={() => setTyped(null)}
+        onChange={(e) => {
+          const v = e.target.value.toUpperCase();
+          setTyped(v);
+          onChange(v);
+        }}
       />
       <datalist id={id}>
         {recent.map((code) => (

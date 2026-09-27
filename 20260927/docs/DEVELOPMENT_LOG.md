@@ -73,6 +73,13 @@ Browser ── static Next.js export (GitHub Pages, basePath /FlyingBlue)
    and test accounts created, backup restored into the owner's account, registration
    closed. Added: admin panel + registration switch (migration 600), change password,
    Cancel on Add screens, connection links for other devices, keep-alive workflow.
+7. **Airline input fix.** On Add flight the airline list only offered "UNKNOWN": the
+   form prefills the chosen booking's last airline, which for imported bookings is the
+   import placeholder, and a native `<datalist>` only suggests options matching the
+   current text. Now `UNKNOWN_AIRLINE` (`src/domain/earning-log.ts`) is never suggested
+   or prefilled (`src/lib/entry-context.ts`; falls back to Settings → Default airline),
+   and `AirlineInput` empties the box on focus (current value shown as placeholder) so
+   the full list appears; leaving it untouched keeps the value.
 
 Commits: `9126f45` → `fa7fc7a` → `5e2280c` → `b6bffba` → `2435fa2`.
 
@@ -140,6 +147,9 @@ npm run dev                      # http://localhost:3000, uses .env.local (local
   downloadable backups (hence JSON backups).
 - **Booking vs segment status:** XP is computed from segments. Any feature that changes a
   booking's status must decide what happens to its segments.
+- **`<datalist>` filters by the input's text.** A prefilled input shows only matching
+  suggestions. `AirlineInput` works around it (see timeline item 7); `AirportInput`
+  still has the plain behaviour.
 - **Playwright pitfall:** `waitForURL(/dashboard/)` also matches
   `/login/?next=%2Fdashboard%2F`; match on the pathname.
 
@@ -147,9 +157,11 @@ npm run dev                      # http://localhost:3000, uses .env.local (local
 
 - The test account's password is written in the public README. It only exposes an
   empty non-admin account, but consider changing it or deleting the account.
-- Excel import cannot know airlines (no column) → imported flights use a placeholder
-  airline; category defaults to the owner's default category; purchase date = first
-  flight date.
+- Excel import cannot know airlines (no column) → imported flights use the placeholder
+  airline `UNKNOWN`; category defaults to the owner's default category; purchase date =
+  first flight date. Existing `UNKNOWN` segments still need fixing by hand (edit per
+  flight, or SQL `update segments set marketing_airline = 'KL' where marketing_airline
+  = 'UNKNOWN'` after a backup); a bulk "replace airline" tool in Settings is an option.
 - QC 12-month rules for Silver/Gold without upgrade (requalify or drop one level) are an
   assumption; the owner only specified the upgrade and Platinum −300 rules.
 - Not done yet: offline entry (queue writes in IndexedDB), exchange-rate automation,

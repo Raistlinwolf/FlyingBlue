@@ -214,6 +214,9 @@ export interface ImportOptions {
   airline: string;
 }
 
+/** Airline stored on imported flights when none is given (the sheet has no airline column). */
+export const UNKNOWN_AIRLINE = 'UNKNOWN';
+
 const NOTE = 'Imported from Excel (Earning Log)';
 
 function otherSource(category: string): XpSourceType {

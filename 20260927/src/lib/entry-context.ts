@@ -1,6 +1,7 @@
 // Values used to prefill entry forms: recent airports and airlines, the last cabin
 // and the bookings a new flight or XP entry can be attached to.
 import { sortSegments } from '@/domain/bookings';
+import { UNKNOWN_AIRLINE } from '@/domain/earning-log';
 import type { Cabin, TrackerData } from '@/domain/types';
 
 export interface RecentBookingOption {
@@ -23,6 +24,10 @@ export interface EntryContext {
 const byCreatedDesc = (a: { created_at?: string }, b: { created_at?: string }) =>
   (b.created_at ?? '').localeCompare(a.created_at ?? '');
 
+// The import placeholder is not a real airline: never suggest it or prefill with it,
+// otherwise the airline suggestion list is filtered down to just "UNKNOWN".
+const realAirline = (code: string) => (code === UNKNOWN_AIRLINE ? null : code);
+
 export function entryContext(data: TrackerData): EntryContext {
   const liveBookings = data.bookings.filter((b) => b.archived_at == null);
   const liveIds = new Set(liveBookings.map((b) => b.id));
@@ -32,7 +37,8 @@ export function entryContext(data: TrackerData): EntryContext {
   const recentAirlines: string[] = [];
   for (const s of segments) {
     for (const code of [s.origin_iata, s.destination_iata]) if (!recentAirports.includes(code)) recentAirports.push(code);
-    if (!recentAirlines.includes(s.marketing_airline)) recentAirlines.push(s.marketing_airline);
+    const airline = realAirline(s.marketing_airline);
+    if (airline && !recentAirlines.includes(airline)) recentAirlines.push(airline);
   }
 
   const bookings = [...liveBookings]
@@ -49,7 +55,7 @@ export function entryContext(data: TrackerData): EntryContext {
         status: b.status,
         lastDate: last?.flight_date ?? null,
         lastDestination: last?.destination_iata ?? null,
-        lastAirline: last?.marketing_airline ?? null,
+        lastAirline: last ? realAirline(last.marketing_airline) : null,
         lastCabin: last?.cabin ?? null,
       };
     });

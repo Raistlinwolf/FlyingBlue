@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { formatDate, todayIso } from '@/domain/dates';
 import {
   type EarningLogRow,
+  UNKNOWN_AIRLINE,
   creditedXpEvents,
   planImport,
   suggestCycles,
@@ -39,7 +40,7 @@ export function ExcelImport() {
             today,
             currency: settings.preferred_currency,
             category: settings.default_category,
-            airline: airline.trim().toUpperCase() || 'UNKNOWN',
+            airline: airline.trim().toUpperCase() || UNKNOWN_AIRLINE,
           })
         : null,
     [parsed, today, settings.preferred_currency, settings.default_category, airline],
