@@ -1,0 +1,70 @@
+# Builds the XP Tracker (20260927/) as a static site and publishes it to GitHub Pages:
+#   https://raistlinwolf.github.io/FlyingBlue/
+# One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+#
+# No database address or key is built in: the app asks for them on its Connect screen
+# and keeps them in the browser. (Optionally set repository variables SUPABASE_URL and
+# SUPABASE_PUBLISHABLE_KEY to pre-fill a hosted project.)
+name: Deploy XP Tracker to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '20260927/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 20260927
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: 20260927/package-lock.json
+
+      - run: npm ci
+
+      - name: Test (calculations, Excel import, migrations + RLS)
+        run: npm test
+
+      - run: npm run lint
+
+      - name: Build static site
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /FlyingBlue
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: 20260927/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

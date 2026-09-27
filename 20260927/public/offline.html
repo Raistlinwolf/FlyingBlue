@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Offline · XP Tracker</title>
+<style>
+  :root { color-scheme: light dark; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: #f4f4f1; color: #0b0b0b; padding: 1.5rem; }
+  @media (prefers-color-scheme: dark) { body { background: #0d0d0d; color: #fff; } p { color: #c3c2b7; } }
+  main { max-width: 22rem; text-align: center; }
+  img { width: 64px; height: 64px; border-radius: 16px; }
+  p { color: #52514e; line-height: 1.5; }
+  button { font: inherit; min-height: 44px; padding: 0 1.25rem; border-radius: 12px; border: 0; background: #2a78d6; color: #fff; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <img src="icon.svg" alt="">
+  <h1>You're offline</h1>
+  <p>XP Tracker needs a connection to load and save your data. Your entries are stored online so they stay in sync across devices.</p>
+  <button onclick="location.reload()">Try again</button>
+</main>
+</body>
+</html>

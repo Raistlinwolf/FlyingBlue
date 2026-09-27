@@ -1,0 +1,125 @@
+@import 'tailwindcss';
+
+/* Dark mode follows the `dark` class on <html> (set from the theme preference). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semantic design tokens. Light values here, dark values under .dark. */
+:root {
+  color-scheme: light;
+  --page: #f4f4f1;
+  --surface: #fcfcfb;
+  --surface-2: #f0efec;
+  --border: rgba(11, 11, 11, 0.1);
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #7a7873;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --accent: #2a78d6;
+  --accent-ink: #1c5cab;
+  --accent-soft: #cde2fb;
+  /* XP states: actual = solid accent, booked = lighter step of the same hue. */
+  --xp-actual: #2a78d6;
+  --xp-booked: #86b6ef;
+  --xp-projected: #eb6834;
+  --good: #006300;
+  --danger: #d03b3b;
+  --warning-bg: #fff4d6;
+  --warning-ink: #7a5200;
+}
+
+.dark {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-2: #262624;
+  --border: rgba(255, 255, 255, 0.1);
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #9a988f;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --accent: #3987e5;
+  --accent-ink: #9ec5f4;
+  --accent-soft: #10325c;
+  --xp-actual: #3987e5;
+  --xp-booked: #184f95;
+  --xp-projected: #d95926;
+  --good: #0ca30c;
+  --danger: #e66767;
+  --warning-bg: #3a2c05;
+  --warning-ink: #fab219;
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-xp-actual: var(--xp-actual);
+  --color-xp-booked: var(--xp-booked);
+  --color-xp-projected: var(--xp-projected);
+  --color-good: var(--good);
+  --color-danger: var(--danger);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-ink: var(--warning-ink);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+html {
+  background: var(--page);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--page);
+  font-family: var(--font-sans);
+}
+
+/* Form controls share one look. */
+.input {
+  width: 100%;
+  min-height: 2.75rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem; /* ≥16px avoids iOS zoom on focus */
+  color: var(--ink);
+  outline: none;
+}
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+select.input {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2rem;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Leave room for the iOS home indicator under the bottom navigation. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
