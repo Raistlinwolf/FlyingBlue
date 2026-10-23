@@ -1,13 +1,14 @@
 # Free Supabase projects are paused after about a week without activity. This calls a
 # harmless database function (public.keepalive() returns the current time and touches
-# no user data) every three days so the project stays awake.
+# no user data) once a day so the project stays awake, with plenty of margin even if
+# a few scheduled runs are delayed or skipped by GitHub.
 # Note: GitHub disables scheduled workflows in repositories without commits for 60 days;
 # re-enable it under Actions if that happens.
 name: Keep Supabase awake
 
 on:
   schedule:
-    - cron: '17 5 */3 * *'
+    - cron: '17 5 * * *'
   workflow_dispatch:
 
 permissions:
@@ -21,8 +22,13 @@ jobs:
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://jczyrhbgqvttqkhcahmk.supabase.co' }}
           SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_MjgDfM3Q2eeLOdDlvrggAQ_4qH6OKn3' }}
+        # The runner's resolver has repeatedly failed to look up *.supabase.co (curl exit 6),
+        # so fall back to DNS-over-HTTPS resolvers before giving up.
         run: |
-          curl --fail --silent --show-error --retry 3 \
-            -X POST "$SUPABASE_URL/rest/v1/rpc/keepalive" \
-            -H "apikey: $SUPABASE_KEY" -H "Content-Type: application/json" -d '{}'
+          ping() {
+            curl --fail --silent --show-error --retry 3 --retry-all-errors "$@" \
+              -X POST "$SUPABASE_URL/rest/v1/rpc/keepalive" \
+              -H "apikey: $SUPABASE_KEY" -H "Content-Type: application/json" -d '{}'
+          }
+          ping || ping --doh-url https://1.1.1.1/dns-query || ping --doh-url https://dns.google/dns-query
           echo
