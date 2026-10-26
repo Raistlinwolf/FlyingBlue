@@ -1,4 +1,4 @@
-# Builds the XP Tracker (20260927/) as a static site and publishes it to GitHub Pages:
+# Builds the XP Tracker (xp-tracker/) as a static site and publishes it to GitHub Pages:
 #   https://raistlinwolf.github.io/FlyingBlue/
 # One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
 #
@@ -13,7 +13,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '20260927/**'
+      - 'xp-tracker/**'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: 20260927
+        working-directory: xp-tracker
     steps:
       - uses: actions/checkout@v7
 
@@ -39,7 +39,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: 20260927/package-lock.json
+          cache-dependency-path: xp-tracker/package-lock.json
 
       - run: npm ci
 
@@ -59,7 +59,7 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: 20260927/out
+          path: xp-tracker/out
 
   deploy:
     needs: build
